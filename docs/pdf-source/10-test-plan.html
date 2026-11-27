@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Organic Trace – Test Plan and Test Cases</title>
+<link rel="stylesheet" href="doc.css">
+<style>
+  td.p { color: #2e5e3e; font-weight: 600; white-space: nowrap; }
+  td.n { color: #a15c07; font-weight: 600; white-space: nowrap; }
+  table.tc td:first-child { font-family: "IBM Plex Mono", monospace; font-size: 8pt; white-space: nowrap; }
+  table.tc { font-size: 8.6pt; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="38" height="38" fill="none" stroke="#2e5e3e"><circle cx="16" cy="16" r="14.5" stroke-width="1.5"/><circle cx="16" cy="16" r="11.5" stroke-width=".75" stroke-dasharray="1.4 1.6"/><path d="M16 23v-8" stroke-width="1.6" stroke-linecap="round"/><path d="M16 16c0-3.6 2.4-6 6-6 0 3.6-2.4 6-6 6Z" fill="#2e5e3e" stroke="none"/><path d="M16 18.5c0-2.8-1.9-4.7-4.7-4.7 0 2.8 1.9 4.7 4.7 4.7Z" fill="#b7791f" stroke="none"/></svg>
+    <div>Organic Trace<small>FARM · LEDGER · SHELF</small></div>
+  </div>
+  <div>
+    <p class="eyebrow">Document 10 of 13</p>
+    <h1>Test Plan and Test Cases</h1>
+    <p class="lede">Test strategy, environments, entry and exit criteria, the 83 automated tests, and manual and end-to-end test cases with their results as of 27 November 2026.</p>
+  </div>
+  <div class="meta">
+    <div><b>For</b>Developers, testers, reviewers</div>
+    <div><b>Version</b>1.0 · 27 November 2026</div>
+    <div><b>Results summary</b>83/83 automated pass · 44/44 E2E checks pass</div>
+  </div>
+</div>
+
+<section>
+  <h2><span class="num">01</span>Strategy</h2>
+  <table>
+    <thead><tr><th>Level</th><th>What</th><th>Tools</th><th>How it runs</th></tr></thead>
+    <tbody>
+      <tr><td>Unit: contract</td><td>Every function, revert and role of <code>OrganicTrace.sol</code></td><td>Hardhat, Chai, ethers</td><td><code>npm test</code> (in-process Hardhat network)</td></tr>
+      <tr><td>Unit: logic</td><td>Fraud rules, sliding window, bands, file-type check, config</td><td>Vitest</td><td><code>npm --prefix backend test</code></td></tr>
+      <tr><td>Integration: API</td><td>Every endpoint against a <b>real</b> local chain and an in-memory PostgreSQL loaded with the real schema</td><td>Vitest, Supertest, pg-mem</td><td>Same command; starts a Hardhat node and deploys the contract</td></tr>
+      <tr><td>End-to-end</td><td>Browser-equivalent flow through the website's <code>/api</code> forwarding and pages</td><td>Node script + production builds</td><td>Local stack (Hardhat, PostgreSQL, API, indexer, website)</td></tr>
+      <tr><td>Visual / responsive</td><td>Key pages at 1366 px and 390 px, light and dark mode</td><td>Headless Chrome screenshots</td><td>Manual review</td></tr>
+      <tr><td>Acceptance</td><td>PRD acceptance criteria on the deployed site</td><td>Manual</td><td>Before handover</td></tr>
+    </tbody>
+  </table>
+  <h3>Entry criteria</h3>
+  <p>The code compiles (<code>tsc</code>, <code>next build</code>, <code>hardhat compile</code>), dependencies are installed, and the environment is configured.</p>
+  <h3>Exit criteria (release)</h3>
+  <ul>
+    <li>All automated tests pass; contract line coverage is 100%.</li>
+    <li>No open defects of severity High or Critical.</li>
+    <li>All PRD acceptance criteria pass on the deployed site (section 6).</li>
+    <li><code>npm audit --omit=dev</code> reports no high or critical vulnerabilities.</li>
+  </ul>
+  <h3>Environments</h3>
+  <table>
+    <tbody>
+      <tr><td>Local test</td><td>Hardhat chain (31337), PostgreSQL 17, API, indexer, website production build on Windows 11, Node 25</td></tr>
+      <tr><td>Staging / live</td><td>Polygon Amoy (80002), Supabase, Pinata, Docker; to be run before handover (see section 7)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page">
+  <h2><span class="num">02</span>Automated tests: smart contract (25)</h2>
+  <table class="tc">
+    <thead><tr><th>ID</th><th>Test case</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>SC-01</td><td>Deployment grants admin and relayer roles</td><td class="p">Pass</td></tr>
+      <tr><td>SC-02</td><td>registerBatch stores the batch at Farmer stage with Registered status</td><td class="p">Pass</td></tr>
+      <tr><td>SC-03</td><td>registerBatch emits BatchRegistered</td><td class="p">Pass</td></tr>
+      <tr><td>SC-04</td><td>Rejects a duplicate batch id</td><td class="p">Pass</td></tr>
+      <tr><td>SC-05</td><td>Rejects callers without RELAYER_ROLE</td><td class="p">Pass</td></tr>
+      <tr><td>SC-06</td><td>Rejects empty required fields, long strings and a zero farmer id</td><td class="p">Pass</td></tr>
+      <tr><td>SC-07</td><td>A certifier can approve with a future expiry</td><td class="p">Pass</td></tr>
+      <tr><td>SC-08</td><td>The relayer can certify on behalf of a certifier</td><td class="p">Pass</td></tr>
+      <tr><td>SC-09</td><td>Rejects an expiry that is not in the future</td><td class="p">Pass</td></tr>
+      <tr><td>SC-10</td><td>Requires a certificate CID when approving</td><td class="p">Pass</td></tr>
+      <tr><td>SC-11</td><td>Records a rejection</td><td class="p">Pass</td></tr>
+      <tr><td>SC-12</td><td>certifyBatch rejects strangers and unknown batches</td><td class="p">Pass</td></tr>
+      <tr><td>SC-13</td><td>Cannot certify a sold batch</td><td class="p">Pass</td></tr>
+      <tr><td>SC-14</td><td>Moves a certified batch forward one stage at a time and records history</td><td class="p">Pass</td></tr>
+      <tr><td>SC-15</td><td>Emits BatchTransferred</td><td class="p">Pass</td></tr>
+      <tr><td>SC-16</td><td>Rejects skipping a stage (Farmer straight to Retailer)</td><td class="p">Pass</td></tr>
+      <tr><td>SC-17</td><td>Rejects moving backwards or staying in place</td><td class="p">Pass</td></tr>
+      <tr><td>SC-18</td><td>Rejects transferring to Sold (must use markSold)</td><td class="p">Pass</td></tr>
+      <tr><td>SC-19</td><td>Rejects uncertified and rejected batches</td><td class="p">Pass</td></tr>
+      <tr><td>SC-20</td><td>Blocks transfers after a certifier revokes approval</td><td class="p">Pass</td></tr>
+      <tr><td>SC-21</td><td>Rejects strangers, the certifier and a zero recipient</td><td class="p">Pass</td></tr>
+      <tr><td>SC-22</td><td>markSold marks a Retailer-stage batch as Sold and appends to history</td><td class="p">Pass</td></tr>
+      <tr><td>SC-23</td><td>markSold only works at Retailer stage, and only once</td><td class="p">Pass</td></tr>
+      <tr><td>SC-24</td><td>Views revert for unknown batches</td><td class="p">Pass</td></tr>
+      <tr><td>SC-25</td><td>Views return an empty history for a fresh batch</td><td class="p">Pass</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page">
+  <h2><span class="num">03</span>Automated tests: API and logic (58)</h2>
+  <table class="tc">
+    <thead><tr><th>ID</th><th>Test case</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3"><b>Authentication and users</b> (auth.test.ts)</td></tr>
+      <tr><td>AU-01</td><td>Register creates a pending account with a lower-cased email and an on-chain actor id</td><td class="p">Pass</td></tr>
+      <tr><td>AU-02</td><td>Duplicate email returns 409</td><td class="p">Pass</td></tr>
+      <tr><td>AU-03</td><td>Cannot self-register as admin</td><td class="p">Pass</td></tr>
+      <tr><td>AU-04</td><td>Invalid input returns 400 with field details</td><td class="p">Pass</td></tr>
+      <tr><td>AU-05</td><td>Malformed JSON returns 400</td><td class="p">Pass</td></tr>
+      <tr><td>AU-06</td><td>Login returns a JWT and sets an HTTP-only cookie</td><td class="p">Pass</td></tr>
+      <tr><td>AU-07</td><td>Wrong password and unknown email give the same 401</td><td class="p">Pass</td></tr>
+      <tr><td>AU-08</td><td>Pending and blocked accounts get 403</td><td class="p">Pass</td></tr>
+      <tr><td>AU-09</td><td>/me works with a Bearer token</td><td class="p">Pass</td></tr>
+      <tr><td>AU-10</td><td>/me works with the cookie</td><td class="p">Pass</td></tr>
+      <tr><td>AU-11</td><td>401 without a token or with a bad or expired token</td><td class="p">Pass</td></tr>
+      <tr><td>AU-12</td><td>Admin lists pending users and approves one, who can then log in</td><td class="p">Pass</td></tr>
+      <tr><td>AU-13</td><td>Blocking cuts off an existing session immediately</td><td class="p">Pass</td></tr>
+      <tr><td>AU-14</td><td>Admin routes return 403 for non-admin roles</td><td class="p">Pass</td></tr>
+      <tr><td>AU-15</td><td>Validates target id and status; refuses self-changes</td><td class="p">Pass</td></tr>
+      <tr><td>AU-16</td><td>Health endpoint, and JSON 404 for unknown routes</td><td class="p">Pass</td></tr>
+      <tr><td colspan="3"><b>Batches</b> (batches.test.ts)</td></tr>
+      <tr><td>BA-01</td><td>Full lifecycle: register on-chain, certify, transfer to retailer, sell</td><td class="p">Pass</td></tr>
+      <tr><td>BA-02</td><td>Rejection blocks transfers and scores 40</td><td class="p">Pass</td></tr>
+      <tr><td>BA-03</td><td>Only farmers can register; input is validated</td><td class="p">Pass</td></tr>
+      <tr><td>BA-04</td><td>Only certifiers certify; approval needs a future expiry and a certificate</td><td class="p">Pass</td></tr>
+      <tr><td>BA-05</td><td>Cannot transfer before certification</td><td class="p">Pass</td></tr>
+      <tr><td>BA-06</td><td>Cannot transfer once the certificate has expired, until it is renewed</td><td class="p">Pass</td></tr>
+      <tr><td>BA-07</td><td>Only the current holder can transfer, and only to the next role</td><td class="p">Pass</td></tr>
+      <tr><td>BA-08</td><td>The contract is the final guard: a stale database still can't skip a stage</td><td class="p">Pass</td></tr>
+      <tr><td>BA-09</td><td>Only the holding retailer can mark sold, and only at retailer stage</td><td class="p">Pass</td></tr>
+      <tr><td>BA-10</td><td>Lists batches by role visibility; search works</td><td class="p">Pass</td></tr>
+      <tr><td>BA-11</td><td>Lists approved recipients by role, without emails</td><td class="p">Pass</td></tr>
+      <tr><td>BA-12</td><td>QR returns a PNG or SVG pointing at the trace page, for the holding retailer or admin</td><td class="p">Pass</td></tr>
+      <tr><td>BA-13</td><td>Admin analytics summarises users, batches, alerts and daily activity</td><td class="p">Pass</td></tr>
+      <tr><td>BA-14</td><td>Serves the generated gas report</td><td class="p">Pass</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <table class="tc">
+    <thead><tr><th>ID</th><th>Test case</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td colspan="3"><b>Fraud engine</b> (fraud.test.ts)</td></tr>
+      <tr><td>FR-01</td><td>A clean certified batch scores 100 / verified</td><td class="p">Pass</td></tr>
+      <tr><td>FR-02</td><td>R1: uncertified loses 40 (caution)</td><td class="p">Pass</td></tr>
+      <tr><td>FR-03</td><td>R5: rejected loses 60 and does not also trigger R1</td><td class="p">Pass</td></tr>
+      <tr><td>FR-04</td><td>R2: chain mismatch loses 30 and lists the differences</td><td class="p">Pass</td></tr>
+      <tr><td>FR-05</td><td>R2 is skipped when the chain couldn't be checked</td><td class="p">Pass</td></tr>
+      <tr><td>FR-06</td><td>R3: expired certificate loses 25</td><td class="p">Pass</td></tr>
+      <tr><td>FR-07</td><td>R3 applies only to certified batches</td><td class="p">Pass</td></tr>
+      <tr><td>FR-08</td><td>R4: 3 transfers in an hour is fine, 4 loses 10, 6+ is capped at 20</td><td class="p">Pass</td></tr>
+      <tr><td>FR-09</td><td>R4 ignores transfers spread over more than an hour</td><td class="p">Pass</td></tr>
+      <tr><td>FR-10</td><td>Rules combine, and the score is clamped at 0</td><td class="p">Pass</td></tr>
+      <tr><td>FR-11</td><td>maxTransfersInWindow uses a sliding window</td><td class="p">Pass</td></tr>
+      <tr><td>FR-12</td><td>bandFor matches the TRD thresholds</td><td class="p">Pass</td></tr>
+      <tr><td colspan="3"><b>Indexer</b> (indexer.test.ts)</td></tr>
+      <tr><td>IX-01</td><td>Idempotent: re-applying events the API already stored changes nothing</td><td class="p">Pass</td></tr>
+      <tr><td>IX-02</td><td>Rebuilds lost database state from chain events</td><td class="p">Pass</td></tr>
+      <tr><td>IX-03</td><td>Never rolls state back when an older event arrives after a newer one</td><td class="p">Pass</td></tr>
+      <tr><td>IX-04</td><td>Resumes from the saved block and skips unknown batches</td><td class="p">Pass</td></tr>
+      <tr><td colspan="3"><b>Public trace</b> (trace.test.ts)</td></tr>
+      <tr><td>TR-01</td><td>Shows journey, certificate, trust score and a verified badge without login</td><td class="p">Pass</td></tr>
+      <tr><td>TR-02</td><td>Detects a tampered database record (R2) and shows a warning</td><td class="p">Pass</td></tr>
+      <tr><td>TR-03</td><td>Warning and lower score for an uncertified batch</td><td class="p">Pass</td></tr>
+      <tr><td>TR-04</td><td>Expired certificate shows as R3 with a warning</td><td class="p">Pass</td></tr>
+      <tr><td>TR-05</td><td>Rate-limits each visitor separately using the forwarded address</td><td class="p">Pass</td></tr>
+      <tr><td>TR-06</td><td>404 for unknown or malformed codes</td><td class="p">Pass</td></tr>
+      <tr><td colspan="3"><b>Uploads and configuration</b> (upload.test.ts, config.test.ts)</td></tr>
+      <tr><td>UP-01</td><td>Uploads a certificate PDF for a farmer; returns the CID and gateway URL</td><td class="p">Pass</td></tr>
+      <tr><td>UP-02</td><td>Allows certifiers; refuses other roles and anonymous users</td><td class="p">Pass</td></tr>
+      <tr><td>UP-03</td><td>Rejects disguised files, missing files and files over 5 MB</td><td class="p">Pass</td></tr>
+      <tr><td>UP-04</td><td>Recognises PDF, PNG, JPEG and WebP by content</td><td class="p">Pass</td></tr>
+      <tr><td>CF-01</td><td>Safe defaults for proxy and rate limits</td><td class="p">Pass</td></tr>
+      <tr><td>CF-02</td><td>Refuses a localhost site URL in production</td><td class="p">Pass</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page">
+  <h2><span class="num">04</span>End-to-end test cases (local stack)</h2>
+  <p>Run on 27 November 2026 against production builds of the API and website, a local Hardhat chain and PostgreSQL 17, through the website's <code>/api</code> forwarding, exactly as a browser would. Result: <b>44 of 44 checks passed</b>. One check initially failed because of a mistake in the test script itself (a 1-character location, correctly refused with 400); it was corrected and re-run.</p>
+  <table class="tc">
+    <thead><tr><th>ID</th><th>Steps</th><th>Expected result</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>E2E-01</td><td>Log in as each of the 5 demo roles and the admin</td><td>200; session cookie set</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-02</td><td>Log in with a wrong password</td><td>401</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-03</td><td>Register a new farmer; try to log in</td><td>201; then 403 "awaiting approval"</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-04</td><td>Admin approves; the new user logs in</td><td>200 / 200</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-05</td><td>Farmer registers "Basmati Rice, 250 kg"</td><td>201, on-chain, code OT-YYYY-XXXXXX</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-06</td><td>Processor tries to register a batch</td><td>403</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-07</td><td>Farmer transfers before certification</td><td>409 "must be certified"</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-08</td><td>Certifier approves with an expiry date</td><td>200, status certified</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-09</td><td>Farmer sends straight to the retailer</td><td>Refused ("Recipient must be a processor")</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-10</td><td>Farmer → processor → distributor → retailer</td><td>200 each; stage updates</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-11</td><td>The previous holder tries to move the batch again</td><td>403 "Only the current holder…"</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-12</td><td>Retailer downloads the QR label</td><td>PNG image</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-13</td><td>Retailer marks sold</td><td>200, stage sold</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-14</td><td>Public trace API and page, no login</td><td>Verified badge, matches chain, score 100, 6 steps, page shows "Verified organic"</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-15</td><td>Trace page for an unknown code</td><td>"Batch not found"</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-16</td><td>Admin analytics, gas report, fraud alerts</td><td>200; values correct</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-17</td><td>Farmer calls an admin endpoint</td><td>403</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-18</td><td>Open all 12 page routes</td><td>200 for each</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-19</td><td>Indexer running alongside the API</td><td>Indexes all events; no errors in the API log</td><td class="p">Pass</td></tr>
+      <tr><td>E2E-20</td><td>Rejected batch on the trace page</td><td>Warning, score 40, R5 alert in the admin panel</td><td class="p">Pass</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">05</span>Manual, visual and non-functional cases</h2>
+  <table class="tc">
+    <thead><tr><th>ID</th><th>Case</th><th>Expected</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>UI-01</td><td>Home, login, trace, dashboards and admin at 1366 px, light mode</td><td>Readable, aligned, no overflow</td><td class="p">Pass</td></tr>
+      <tr><td>UI-02</td><td>Same pages in dark mode</td><td>Readable contrast</td><td class="p">Pass</td></tr>
+      <tr><td>UI-03</td><td>Trace page, home and farmer dashboard at 390 px (phone)</td><td>No sideways scroll; header fits on one line</td><td class="p">Pass</td></tr>
+      <tr><td>UI-04</td><td>Dialogs (certify, transfer, mark sold) open with the correct data</td><td>Correct batch and options</td><td class="p">Pass</td></tr>
+      <tr><td>UI-05</td><td>Harvest date shown on a server set to IST</td><td>The date entered (no day shift)</td><td class="p">Pass (after fix, see Document 12)</td></tr>
+      <tr><td>UI-06</td><td>Print the QR label from a browser</td><td>Only the label prints</td><td class="n">Not run</td></tr>
+      <tr><td>UI-07</td><td>Scan a printed QR with Android and iPhone cameras</td><td>Opens the trace page</td><td class="n">Not run</td></tr>
+      <tr><td>UI-08</td><td>Firefox and Safari</td><td>Same behaviour as Chrome</td><td class="n">Not run</td></tr>
+      <tr><td>NF-01</td><td>Trace page load time on 4G (PRD: under 3 s)</td><td>&lt; 3 s</td><td class="n">Not run on live</td></tr>
+      <tr><td>NF-02</td><td>Indexer restart mid-way</td><td>Resumes, no duplicates</td><td class="p">Pass (IX-04)</td></tr>
+      <tr><td>NF-03</td><td>Dependency audit</td><td>0 high or critical</td><td class="p">Pass (0 vulnerabilities)</td></tr>
+      <tr><td>NF-04</td><td>Production configuration with a localhost URL</td><td>API refuses to start</td><td class="p">Pass (CF-02)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page">
+  <h2><span class="num">06</span>PRD acceptance criteria</h2>
+  <table class="tc">
+    <thead><tr><th>ID</th><th>Criterion (PRD section 9)</th><th>Evidence</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>AC-1</td><td>A batch can travel from Farmer to Retailer, and each step appears on the trace page with a transaction link</td><td>BA-01, E2E-10, E2E-14</td><td class="p">Pass (local)</td></tr>
+      <tr><td>AC-2</td><td>An uncertified or expired batch shows a Warning badge and a reduced score</td><td>TR-03, TR-04, E2E-20</td><td class="p">Pass</td></tr>
+      <tr><td>AC-3</td><td>Skipping a stage is rejected by the contract</td><td>SC-16, BA-08</td><td class="p">Pass</td></tr>
+      <tr><td>AC-4</td><td>A user without the right role gets 403</td><td>AU-14, BA-03, E2E-06, E2E-17</td><td class="p">Pass</td></tr>
+      <tr><td>AC-5</td><td>Contract tests and fraud engine tests pass</td><td>25/25 and 12/12</td><td class="p">Pass</td></tr>
+      <tr><td>AC-6</td><td>The live demo runs end to end on the deployed site</td><td>Needs a new database and a funded relayer (Document 13)</td><td class="n">Not run</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">07</span>Still to run before handover</h2>
+  <ol class="steps">
+    <li>Deploy to the live server with Amoy, Supabase and Pinata (Document 2).</li>
+    <li>Repeat E2E-01 to E2E-20 on the live site, with a <b>real certificate upload</b>.</li>
+    <li>Print a QR label and scan it with an Android phone and an iPhone (UI-06, UI-07).</li>
+    <li>Check the trace page on mobile data (NF-01) and in Firefox and Safari (UI-08).</li>
+    <li>Record the results in this document, then sign off.</li>
+  </ol>
+  <table>
+    <tbody>
+      <tr><td style="width:35%">Tested by</td><td>________________________</td></tr>
+      <tr><td>Date</td><td>________________________</td></tr>
+      <tr><td>Approved for release by</td><td>________________________</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</body>
+</html>

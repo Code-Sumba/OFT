@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Organic Trace – Database Schema and Queries</title>
+<link rel="stylesheet" href="doc.css">
+<style>
+  svg.diagram { width: 100%; height: auto; display: block; margin: 2mm 0 5mm; }
+  svg.diagram text { font-family: "IBM Plex Mono", monospace; font-size: 9.5px; fill: #1f2a22; }
+  svg.diagram .t { font-family: "Fraunces", serif; font-weight: 600; font-size: 12px; }
+  svg.diagram .k { fill: #b7791f; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="38" height="38" fill="none" stroke="#2e5e3e"><circle cx="16" cy="16" r="14.5" stroke-width="1.5"/><circle cx="16" cy="16" r="11.5" stroke-width=".75" stroke-dasharray="1.4 1.6"/><path d="M16 23v-8" stroke-width="1.6" stroke-linecap="round"/><path d="M16 16c0-3.6 2.4-6 6-6 0 3.6-2.4 6-6 6Z" fill="#2e5e3e" stroke="none"/><path d="M16 18.5c0-2.8-1.9-4.7-4.7-4.7 0 2.8 1.9 4.7 4.7 4.7Z" fill="#b7791f" stroke="none"/></svg>
+    <div>Organic Trace<small>FARM · LEDGER · SHELF</small></div>
+  </div>
+  <div>
+    <p class="eyebrow">Document 8 of 13</p>
+    <h1>Database Schema and Common Queries</h1>
+    <p class="lede">The six PostgreSQL tables, how they relate, how they mirror the blockchain, and ready-to-use SQL for support and debugging.</p>
+  </div>
+  <div class="meta">
+    <div><b>For</b>Developers and support staff</div>
+    <div><b>Version</b>Schema 1.0 · 27 November 2026</div>
+    <div><b>Source</b>db/schema.sql</div>
+  </div>
+</div>
+
+<section>
+  <h2><span class="num">01</span>Role of the database</h2>
+  <p>The blockchain is the source of truth for batch history. The database holds:</p>
+  <ul>
+    <li><b>A fast cache of chain state</b>: batches, events and certificates, written only by applying contract events.</li>
+    <li><b>Off-chain data</b>: users and password hashes, quantities and units, fraud alerts, indexer progress.</li>
+  </ul>
+  <p>Batch history can be rebuilt from chain events by re-indexing. Users can't be, so <b>back the database up</b>. The schema is in <code>db/schema.sql</code> and is applied with <code>npm run db:migrate</code>. Every statement uses <code>IF NOT EXISTS</code>, so it is safe to run again.</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span>Entity-relationship diagram</h2>
+  <svg class="diagram" viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg">
+    <g fill="#fbf8f1" stroke="#1f2a22">
+      <rect x="10" y="20" width="190" height="150"/><rect x="255" y="20" width="200" height="200"/><rect x="510" y="20" width="180" height="150"/>
+      <rect x="255" y="250" width="200" height="100"/><rect x="510" y="200" width="180" height="120"/><rect x="10" y="230" width="190" height="60"/>
+    </g>
+    <text class="t" x="20" y="38">users</text>
+    <text x="20" y="56"><tspan class="k">PK</tspan> id uuid</text><text x="20" y="70">name, email (unique)</text><text x="20" y="84">password_hash</text><text x="20" y="98">role, status</text><text x="20" y="112">organisation</text><text x="20" y="126">chain_actor_id (unique)</text><text x="20" y="140">created_at</text>
+
+    <text class="t" x="265" y="38">batches</text>
+    <text x="265" y="56"><tspan class="k">PK</tspan> id uuid</text><text x="265" y="70">batch_code (unique)</text><text x="265" y="84">product, quantity, unit</text><text x="265" y="98">origin, harvest_date</text><text x="265" y="112"><tspan class="k">FK</tspan> farmer_id → users</text><text x="265" y="126">certificate_cid, cert_expiry</text><text x="265" y="140">status, stage</text><text x="265" y="154"><tspan class="k">FK</tspan> current_owner_id → users</text><text x="265" y="168">tx_hash_register</text><text x="265" y="182">trust_score</text><text x="265" y="196">last_block, last_log_index</text><text x="265" y="210">created_at</text>
+
+    <text class="t" x="520" y="38">batch_events</text>
+    <text x="520" y="56"><tspan class="k">PK</tspan> id bigserial</text><text x="520" y="70"><tspan class="k">FK</tspan> batch_code</text><text x="520" y="84">event_type, stage, location</text><text x="520" y="98"><tspan class="k">FK</tspan> from_user_id, to_user_id</text><text x="520" y="112">tx_hash, log_index (unique)</text><text x="520" y="126">block_number</text><text x="520" y="140">event_time</text>
+
+    <text class="t" x="265" y="268">fraud_alerts</text>
+    <text x="265" y="286"><tspan class="k">PK</tspan> id bigserial</text><text x="265" y="300"><tspan class="k">FK</tspan> batch_code</text><text x="265" y="314">rule, severity, details</text><text x="265" y="328">resolved, created_at</text>
+
+    <text class="t" x="520" y="218">certificates</text>
+    <text x="520" y="236"><tspan class="k">PK</tspan> id bigserial</text><text x="520" y="250"><tspan class="k">FK</tspan> batch_code</text><text x="520" y="264">cid, approved, expiry</text><text x="520" y="278"><tspan class="k">FK</tspan> certifier_id → users</text><text x="520" y="292">tx_hash (unique)</text><text x="520" y="306">created_at</text>
+
+    <text class="t" x="20" y="248">indexer_state</text>
+    <text x="20" y="266">id = 1 (single row)</text><text x="20" y="280">last_block</text>
+
+    <g stroke="#1f2a22" fill="none">
+      <path d="M200 70 H255"/><path d="M455 70 H510"/><path d="M455 200 Q480 230 510 240"/><path d="M355 220 V250"/><path d="M200 120 Q230 120 255 150"/>
+    </g>
+    <text x="208" y="64">1 : n</text><text x="462" y="64">1 : n</text><text x="462" y="226">1 : n</text><text x="362" y="240">1 : n</text>
+  </svg>
+</section>
+
+<section class="page">
+  <h2><span class="num">03</span>Tables</h2>
+  <h3>users</h3>
+  <table>
+    <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>id</td><td>uuid PK</td><td>Generated by the API</td></tr>
+      <tr><td>name</td><td>text</td><td></td></tr>
+      <tr><td>email</td><td>text UNIQUE</td><td>Stored in lower case</td></tr>
+      <tr><td>password_hash</td><td>text</td><td>bcrypt, 10 rounds</td></tr>
+      <tr><td>role</td><td>text CHECK</td><td>admin, farmer, certifier, processor, distributor, retailer</td></tr>
+      <tr><td>status</td><td>text CHECK, default pending</td><td>pending, approved, blocked</td></tr>
+      <tr><td>organisation</td><td>text NULL</td><td></td></tr>
+      <tr><td>chain_actor_id</td><td>text UNIQUE</td><td><code>keccak256(id)</code> as 0x-hex: the user's id on-chain</td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td></td></tr>
+    </tbody>
+  </table>
+  <h3>batches</h3>
+  <table>
+    <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>id</td><td>uuid PK</td><td></td></tr>
+      <tr><td>batch_code</td><td>text UNIQUE</td><td><code>OT-YYYY-XXXXXX</code>, also the on-chain batch id</td></tr>
+      <tr><td>product, origin</td><td>text</td><td>Also stored on-chain</td></tr>
+      <tr><td>quantity</td><td>numeric(12,2) CHECK &gt; 0</td><td>Off-chain only</td></tr>
+      <tr><td>unit</td><td>text</td><td>Off-chain only</td></tr>
+      <tr><td>harvest_date</td><td>date</td><td>Returned to the app as a <code>YYYY-MM-DD</code> string</td></tr>
+      <tr><td>farmer_id, current_owner_id</td><td>uuid FK users</td><td></td></tr>
+      <tr><td>certificate_cid</td><td>text NULL</td><td>IPFS CID</td></tr>
+      <tr><td>cert_expiry</td><td>timestamptz NULL</td><td>Set on approval</td></tr>
+      <tr><td>status</td><td>text CHECK</td><td>registered, certified, rejected</td></tr>
+      <tr><td>stage</td><td>text CHECK</td><td>farmer, processor, distributor, retailer, sold</td></tr>
+      <tr><td>tx_hash_register</td><td>text NULL</td><td>Set when the registration transaction is sent</td></tr>
+      <tr><td>trust_score</td><td>integer 0–100</td><td>Recomputed by the fraud engine</td></tr>
+      <tr><td>last_block, last_log_index</td><td>bigint / integer</td><td>Position of the last applied chain event (ordering guard). <code>last_block = 0</code> means not yet confirmed.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h3>batch_events</h3>
+  <p>One row per applied contract event. <code>event_type</code>: registered, certified, rejected, transferred, sold. <b>UNIQUE (tx_hash, log_index)</b> makes re-applying an event harmless. Index: <code>(batch_code, block_number)</code>.</p>
+  <h3>certificates</h3>
+  <p>The full certification history: every approve or reject decision, with its CID, expiry and certifier. <b>UNIQUE (tx_hash)</b>.</p>
+  <h3>fraud_alerts</h3>
+  <p>Rule violations from the fraud engine. <code>rule</code> R1–R5; <code>severity</code> medium or high; <code>resolved</code> is set automatically when the rule clears, or when an admin dismisses the alert. At most one open alert per (batch, rule). Index: <code>(resolved, severity)</code>.</p>
+  <h3>indexer_state</h3>
+  <p>A single row (<code>id = 1</code>) holding <code>last_block</code>, the last block the indexer finished. It is created as <code>DEPLOY_BLOCK − 1</code> on first run.</p>
+  <h3>Indexes</h3>
+  <p><code>idx_batches_farmer</code>, <code>idx_batches_owner</code>, <code>idx_batch_events_code_block</code>, <code>idx_fraud_alerts_open</code>, plus the unique constraints above.</p>
+</section>
+
+<section class="page">
+  <h2><span class="num">04</span>How chain events map to rows</h2>
+  <table>
+    <thead><tr><th>Contract event</th><th>batches update (only if newer)</th><th>Also inserted</th></tr></thead>
+    <tbody>
+      <tr><td><code>BatchRegistered</code></td><td><code>tx_hash_register</code> if empty; <code>last_block</code></td><td>batch_events: registered</td></tr>
+      <tr><td><code>BatchCertified</code> approved</td><td>status = certified, certificate_cid, cert_expiry</td><td>batch_events: certified; certificates row</td></tr>
+      <tr><td><code>BatchCertified</code> rejected</td><td>status = rejected, cert_expiry = NULL</td><td>batch_events: rejected; certificates row</td></tr>
+      <tr><td><code>BatchTransferred</code></td><td>stage, current_owner_id</td><td>batch_events: transferred</td></tr>
+      <tr><td><code>BatchSold</code></td><td>stage = sold</td><td>batch_events: sold</td></tr>
+    </tbody>
+  </table>
+  <p>The on-chain actor id (bytes32) is mapped back to a user through <code>users.chain_actor_id</code>.</p>
+</section>
+
+<section>
+  <h2><span class="num">05</span>Common queries</h2>
+  <div class="box warn"><b>Read-only first</b><p>These are for support and debugging. Never <code>UPDATE</code> batch, event or certificate rows by hand: the fraud engine will flag the batch as not matching the blockchain (R2). Change data only through the app.</p></div>
+
+  <h4>Accounts waiting for approval</h4>
+<pre>SELECT name, email, role, organisation, created_at
+FROM users WHERE status = 'pending' ORDER BY created_at;</pre>
+
+  <h4>Find a batch and who holds it</h4>
+<pre>SELECT b.batch_code, b.product, b.status, b.stage, b.trust_score,
+       f.name AS farmer, o.name AS holder, o.role AS holder_role
+FROM batches b
+JOIN users f ON f.id = b.farmer_id
+JOIN users o ON o.id = b.current_owner_id
+WHERE b.batch_code = 'OT-2026-4QNEHY';</pre>
+
+  <h4>Full journey of a batch</h4>
+<pre>SELECT e.event_time, e.event_type, e.stage, e.location,
+       fu.name AS from_user, tu.name AS to_user, e.tx_hash
+FROM batch_events e
+LEFT JOIN users fu ON fu.id = e.from_user_id
+LEFT JOIN users tu ON tu.id = e.to_user_id
+WHERE e.batch_code = 'OT-2026-4QNEHY'
+ORDER BY e.block_number, e.log_index;</pre>
+
+  <h4>Batches still waiting for the blockchain (sent but not confirmed)</h4>
+<pre>SELECT batch_code, product, tx_hash_register, created_at
+FROM batches WHERE last_block = 0 ORDER BY created_at;</pre>
+
+  <h4>Batches waiting for a certifier</h4>
+<pre>SELECT batch_code, product, origin, created_at
+FROM batches WHERE status = 'registered' AND last_block &gt; 0 ORDER BY created_at;</pre>
+
+  <h4>Certificates expiring in the next 30 days</h4>
+<pre>SELECT batch_code, product, stage, cert_expiry
+FROM batches
+WHERE status = 'certified' AND stage &lt;&gt; 'sold'
+  AND cert_expiry BETWEEN now() AND now() + interval '30 days'
+ORDER BY cert_expiry;</pre>
+
+  <h4>Open fraud alerts with their batch</h4>
+<pre>SELECT a.created_at, a.rule, a.severity, a.batch_code, b.product, b.trust_score, a.details
+FROM fraud_alerts a JOIN batches b ON b.batch_code = a.batch_code
+WHERE a.resolved = false ORDER BY a.severity DESC, a.created_at DESC;</pre>
+</section>
+
+<section class="page">
+  <h4>Batches per stage and average trust score</h4>
+<pre>SELECT stage, COUNT(*) AS batches, ROUND(AVG(trust_score)) AS avg_trust
+FROM batches GROUP BY stage ORDER BY batches DESC;</pre>
+
+  <h4>A farmer's batches</h4>
+<pre>SELECT b.batch_code, b.product, b.quantity, b.unit, b.status, b.stage, b.trust_score
+FROM batches b JOIN users u ON u.id = b.farmer_id
+WHERE u.email = 'farmer@demo.local' ORDER BY b.created_at DESC;</pre>
+
+  <h4>Certification decisions by each certifier</h4>
+<pre>SELECT u.name, COUNT(*) FILTER (WHERE c.approved) AS approved,
+       COUNT(*) FILTER (WHERE NOT c.approved) AS rejected
+FROM certificates c JOIN users u ON u.id = c.certifier_id
+GROUP BY u.name;</pre>
+
+  <h4>Activity per day (last 14 days)</h4>
+<pre>SELECT date_trunc('day', event_time)::date AS day, event_type, COUNT(*)
+FROM batch_events WHERE event_time &gt; now() - interval '14 days'
+GROUP BY 1, 2 ORDER BY 1, 2;</pre>
+
+  <h4>How far the indexer has got</h4>
+<pre>SELECT last_block FROM indexer_state WHERE id = 1;</pre>
+
+  <h4>Make the indexer re-read from a block (for example after restoring a backup)</h4>
+<pre>UPDATE indexer_state SET last_block = 49793126 WHERE id = 1;  <span class="c">-- deploy block − 1</span></pre>
+  <p class="small">This is safe: re-applying events changes nothing that is already correct, and fills in anything missing.</p>
+
+  <h4>Approve or block a user by email (same as the admin panel)</h4>
+<pre>UPDATE users SET status = 'approved' WHERE email = 'person@example.com';</pre>
+
+  <h4>Reset a password</h4>
+<pre><span class="c">-- hash created with: node -e "console.log(require('bcryptjs').hashSync('NewPassword', 10))"</span>
+UPDATE users SET password_hash = '$2b$10$…' WHERE email = 'person@example.com';</pre>
+</section>
+
+<section>
+  <h2><span class="num">06</span>Backups and resets</h2>
+  <ul>
+    <li><b>Backups:</b> turn on Supabase daily backups. For a manual copy: <code>pg_dump "$DATABASE_URL" &gt; organic-trace.sql</code>.</li>
+    <li><b>After restoring an older backup:</b> set <code>indexer_state.last_block</code> to the deploy block − 1, as above, so missing chain events are re-applied.</li>
+    <li><b>Full reset (development only):</b> drop and recreate the database, run <code>db:migrate</code> and <code>db:seed</code>, and set <code>DEPLOY_BLOCK</code> to the current block. Old on-chain batches unknown to the new database are skipped by the indexer.</li>
+  </ul>
+</section>
+
+</body>
+</html>

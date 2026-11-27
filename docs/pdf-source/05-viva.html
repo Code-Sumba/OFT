@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Organic Trace – Viva Preparation</title>
+<link rel="stylesheet" href="doc.css">
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="38" height="38" fill="none" stroke="#2e5e3e"><circle cx="16" cy="16" r="14.5" stroke-width="1.5"/><circle cx="16" cy="16" r="11.5" stroke-width=".75" stroke-dasharray="1.4 1.6"/><path d="M16 23v-8" stroke-width="1.6" stroke-linecap="round"/><path d="M16 16c0-3.6 2.4-6 6-6 0 3.6-2.4 6-6 6Z" fill="#2e5e3e" stroke="none"/><path d="M16 18.5c0-2.8-1.9-4.7-4.7-4.7 0 2.8 1.9 4.7 4.7 4.7Z" fill="#b7791f" stroke="none"/></svg>
+    <div>Organic Trace<small>FARM · LEDGER · SHELF</small></div>
+  </div>
+  <div>
+    <p class="eyebrow">Document 5 of 13</p>
+    <h1>Viva Preparation</h1>
+    <p class="lede">A one-minute pitch, the numbers to remember, a demo script, and 70 likely examiner questions with model answers, from basics to the hard ones.</p>
+  </div>
+  <div class="meta">
+    <div><b>For</b>The student presenting the project</div>
+    <div><b>Version</b>1.0 · 27 November 2026</div>
+    <div><b>Project</b>Organic Food Supply Chain Traceability using Blockchain</div>
+  </div>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><span>01</span>The one-minute pitch</li>
+    <li><span>02</span>Numbers to remember</li>
+    <li><span>03</span>Architecture in one page</li>
+    <li><span>04</span>Demo script (5 minutes)</li>
+    <li><span>05</span>Project basics (Q1–Q10)</li>
+    <li><span>06</span>Blockchain concepts (Q11–Q22)</li>
+    <li><span>07</span>Smart contract (Q23–Q34)</li>
+    <li><span>08</span>Backend, relayer and indexer (Q35–Q46)</li>
+    <li><span>09</span>Security (Q47–Q54)</li>
+    <li><span>10</span>Fraud engine and trust score (Q55–Q59)</li>
+    <li><span>11</span>Frontend, testing and cost (Q60–Q65)</li>
+    <li><span>12</span>Hard questions, limitations and future work (Q66–Q70)</li>
+    <li><span>13</span>Tips for the viva</li>
+  </ol>
+</div>
+
+<section>
+  <h2><span class="num">01</span>The one-minute pitch</h2>
+  <div class="box tip"><b>Say this, in your own words</b>
+  <p>"Organic food sells at a premium, but a shopper has no real way to check that a product labelled organic is genuine. Certificates are on paper and records are scattered across farmers, certifiers and traders.</p>
+  <p>Our project is a software-only traceability system for organic produce in India. Each batch is registered by the farmer, approved by a certifier with an expiry date, and handed over farmer → processor → distributor → retailer. Every step is written to a smart contract on Polygon Amoy, which enforces the order and refuses uncertified batches. Certificates are stored on IPFS, and only their fingerprint goes on-chain.</p>
+  <p>The shopper scans a QR code, with no app, wallet or login, and sees the full journey, the certificate, and a trust score from 0 to 100. A rule-based fraud engine produces that score, and it also detects if anyone edits our database. Our hybrid storage design uses 53.6% less gas than storing everything on-chain."</p></div>
+</section>
+
+<section>
+  <h2><span class="num">02</span>Numbers to remember</h2>
+  <table>
+    <thead><tr><th>Fact</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Blockchain / network</td><td>Polygon Amoy testnet, chain ID 80002</td></tr>
+      <tr><td>Contract address</td><td><code>0x270C6563771e17B652770211D13CCD47D7C8D41b</code> (deploy block 49,793,127)</td></tr>
+      <tr><td>Solidity / framework</td><td>Solidity 0.8.24, OpenZeppelin AccessControl 5, Hardhat 2</td></tr>
+      <tr><td>Gas per batch life (register, certify, 3 transfers, sold)</td><td>Hybrid <b>1,139,450</b> vs naive <b>2,455,958</b>: <b>53.6% less</b></td></tr>
+      <tr><td>Biggest single saving</td><td>registerBatch: 304,566 vs 1,228,251 gas (about 75% less)</td></tr>
+      <tr><td>Cost per batch at 30 gwei</td><td>≈ 0.034 POL (naive ≈ 0.074 POL)</td></tr>
+      <tr><td>Roles</td><td>6: admin, farmer, certifier, processor, distributor, retailer; plus the public shopper</td></tr>
+      <tr><td>Stages</td><td>5: Farmer → Processor → Distributor → Retailer → Sold</td></tr>
+      <tr><td>Fraud rules</td><td>R1 uncertified −40 · R2 chain mismatch −30 · R3 expired −25 · R4 rapid transfers up to −20 · R5 rejected −60</td></tr>
+      <tr><td>Trust bands</td><td>≥80 verified · 50–79 caution · &lt;50 suspicious</td></tr>
+      <tr><td>Tests</td><td>25 contract tests + 58 API tests, all passing</td></tr>
+      <tr><td>Coverage</td><td>OrganicTrace.sol: 100% lines, 95.45% branches · backend: 87.4% lines</td></tr>
+      <tr><td>Session / upload limits</td><td>JWT 2 hours · files up to 5 MB (PDF, PNG, JPEG, WebP)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page">
+  <h2><span class="num">03</span>Architecture in one page</h2>
+  <div class="flow">
+    <div><b>Next.js website</b>Dashboards per role, public trace page (server-rendered)</div><i>→</i>
+    <div><b>Express API</b>Auth (JWT), role checks, validation, relayer</div><i>→</i>
+    <div><b>Smart contract</b>Polygon Amoy: source of truth</div>
+  </div>
+  <div class="flow">
+    <div><b>PostgreSQL</b>Users, batch cache, events, alerts</div><i>←</i>
+    <div><b>Indexer</b>Copies contract events into the database; resumes after restart</div><i>←</i>
+    <div><b>Contract events</b>BatchRegistered, Certified, Transferred, Sold</div>
+  </div>
+  <div class="flow">
+    <div><b>IPFS (Pinata)</b>Certificate files; CID stored on-chain</div><i>·</i>
+    <div><b>Fraud engine</b>Rules R1–R5, compares DB with chain, trust score</div><i>·</i>
+    <div><b>QR code</b>Links to /trace/&lt;batch code&gt;</div>
+  </div>
+  <h3>A write, step by step (for example a transfer)</h3>
+  <ol class="steps">
+    <li>The website sends the request with the login cookie.</li>
+    <li>The API checks the JWT, reloads the user (blocked users are refused), checks the role and the business rules: current holder, next role only, certified, certificate not expired.</li>
+    <li>The relayer wallet signs <code>transferBatch(batchId, toActor, toStage, location)</code>. Sends are queued, so nonces stay in order.</li>
+    <li>The contract checks the rules again, and reverts if the stage isn't exactly the next one or the batch isn't certified.</li>
+    <li>When the transaction is confirmed, the API applies the emitted events to the database and recomputes the trust score. The indexer applies the same events again later. Both are idempotent.</li>
+    <li>If the network is slow (no confirmation within 90 seconds), the API answers <b>202</b> with the transaction hash, and the indexer records it later.</li>
+  </ol>
+  <h3>A read (shopper scans the QR)</h3>
+  <p>The trace page loads the batch from the database (fast), then the fraud engine reads <code>getBatch</code> and <code>getHistory</code> from the contract and compares every field and hand-over. The result is cached for 30 seconds; if the chain doesn't answer within 2.5 seconds, R2 is skipped rather than failed.</p>
+</section>
+
+<section class="page">
+  <h2><span class="num">04</span>Demo script (5 minutes)</h2>
+  <ol class="steps">
+    <li><b>Problem and architecture</b> (30 s): one sentence, then the diagram above.</li>
+    <li><b>Farmer</b>: register "Basmati Rice, 250 kg" with <code>demo-certificates/sample-certificate-basmati-rice.pdf</code>. Point out the transaction link.</li>
+    <li><b>Certifier</b>: Review → open the certificate → approve with an expiry date.</li>
+    <li><b>Transfers</b>: farmer → processor → distributor → retailer. Mention that skipping a stage is impossible, and show the error if asked.</li>
+    <li><b>Retailer</b>: QR label → scan it with your phone in front of the examiner → the trace page shows ✓ Verified organic, 100/100.</li>
+    <li><b>Fraud</b>: open a rejected or uncertified batch to show the warning and lower score, then the admin's Fraud alerts tab.</li>
+    <li><b>Gas analysis</b>: the admin Gas analysis tab, 53.6% saving. Explain the hybrid design.</li>
+  </ol>
+  <div class="box warn"><b>Before the day</b><p>Check that the relayer wallet has POL, the database is up, and the live link works from your phone on mobile data. Seed a few demo batches in different states in advance. Keep a screen recording of the full flow as a backup.</p></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">05</span>Project basics</h2>
+  <div class="qa"><div class="q">Q1. What is your project in one sentence?</div><div class="a"><p>A blockchain-backed web system that records organic produce from farm to retailer, so any shopper can scan a QR code and verify the batch's journey, certificate and trust score.</p></div></div>
+  <div class="qa"><div class="q">Q2. What problem are you solving?</div><div class="a"><p>Shoppers can't verify organic claims. Certificates can be forged, records are on paper or in separate systems, and nobody can see what happens after the farm gate. FSSAI's Organic Foods Regulations, 2017 require traceability up to the producer, but in practice it is weak.</p></div></div>
+  <div class="qa"><div class="q">Q3. Who are the users?</div><div class="a"><p>Farmer, certifier, processor, distributor, retailer and admin, each with a dashboard, plus shoppers, who use the public trace page without logging in.</p></div></div>
+  <div class="qa"><div class="q">Q4. What are your objectives?</div><div class="a"><p>A contract for registration, certification and forward-only transfers; role-based dashboards; a wallet-free QR verification page; a rule-based fraud engine with a trust score; a measured gas comparison of hybrid and naive storage; and alignment with NPOP, PGS-India and FSSAI terminology.</p></div></div>
+  <div class="qa"><div class="q">Q5. What is new compared with existing work?</div><div class="a"><p>The proposals we reviewed (Riouali and Rabhi 2024; Pawar et al. 2025) are mostly conceptual, depend on IoT hardware, and give no measurements. Ours is a working, software-only prototype on a public testnet, with measured gas costs, a certificate-expiry check, a shopper-visible trust score, and tamper detection between the database and the chain.</p></div></div>
+  <div class="qa"><div class="q">Q6. Why "software only"?</div><div class="a"><p>IoT sensors add cost and make the work hard to reproduce, and van Hilten et al. (2020) point out that the hard questions are collaboration and what data goes on-chain, not hardware. Our system works with existing certificates and normal phones.</p></div></div>
+  <div class="qa"><div class="q">Q7. What technologies did you use?</div><div class="a"><p>Solidity with OpenZeppelin AccessControl on Polygon Amoy, using Hardhat; a Node.js/Express API using ethers.js; PostgreSQL on Supabase; IPFS through Pinata; a Next.js and React frontend with Tailwind CSS; JWT authentication; and Vitest, Supertest and Chai for testing.</p></div></div>
+  <div class="qa"><div class="q">Q8. What is NPOP / PGS-India?</div><div class="a"><p>NPOP, the National Programme for Organic Production, is India's third-party organic certification system, run under APEDA. Its 8th edition in January 2025 introduced TraceNet 2.0. PGS-India, the Participatory Guarantee System, is a cheaper peer-group certification aimed at small farmers. Our "certifier" role stands for either kind of body.</p></div></div>
+  <div class="qa"><div class="q">Q9. How is this different from APEDA TraceNet?</div><div class="a"><p>TraceNet is a centralised government system controlled by one authority. Ours adds a shared, tamper-evident record that any shopper can check independently. It could sit on top of TraceNet rather than replace it.</p></div></div>
+  <div class="qa"><div class="q">Q10. What is a batch code and why that format?</div><div class="a"><p><code>OT-YYYY-XXXXXX</code>: six random characters from an alphabet without 0, O, 1, I and L, so codes printed on labels can't be misread. It is generated with a cryptographically secure random function, and the database enforces uniqueness.</p></div></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">06</span>Blockchain concepts</h2>
+  <div class="qa"><div class="q">Q11. Why blockchain and not a normal database?</div><div class="a"><p>Several organisations that don't fully trust each other need one shared record that no single party owns or can quietly edit. In a normal database, whoever runs it can change history. On a public chain, every step is timestamped, signed and replicated, and anyone can verify it. We still use a database for speed, but the chain is the source of truth, and we detect any difference between them.</p></div></div>
+  <div class="qa"><div class="q">Q12. What is a blockchain?</div><div class="a"><p>An append-only ledger of blocks. Each block contains transactions and the hash of the previous block, so changing an old block would break every later hash. Many independent nodes hold copies and agree on new blocks through a consensus mechanism.</p></div></div>
+  <div class="qa"><div class="q">Q13. Why Polygon?</div><div class="a"><p>It is compatible with Ethereum (Solidity, MetaMask, the same tools), fees are a tiny fraction of Ethereum's, and blocks come about every 2 seconds. Amoy is its official testnet, so the prototype costs nothing.</p></div></div>
+  <div class="qa"><div class="q">Q14. Public or permissioned chain, and why not Hyperledger Fabric?</div><div class="a"><p>Public. Shoppers and auditors need to verify records without being members of a consortium, and a public chain needs no infrastructure of our own. Fabric suits closed consortiums, but it needs every organisation to run nodes, which small farmers and retailers can't do.</p></div></div>
+  <div class="qa"><div class="q">Q15. What consensus does Polygon use?</div><div class="a"><p>Proof of Stake. Validators stake POL tokens, the Heimdall layer manages the validator set and checkpoints to Ethereum, and the Bor layer produces blocks.</p></div></div>
+  <div class="qa"><div class="q">Q16. What is gas?</div><div class="a"><p>The unit of computation and storage work a transaction uses. Fee = gas used × gas price (base fee + priority tip). Writing new storage is the most expensive operation, which is why we keep on-chain data small.</p></div></div>
+  <div class="qa"><div class="q">Q17. What is a smart contract?</div><div class="a"><p>A program deployed on the blockchain whose code and state everyone can see. Its functions run exactly as written, and nobody, not even its author, can change the rules after deployment.</p></div></div>
+  <div class="qa"><div class="q">Q18. What is IPFS and why use it?</div><div class="a"><p>The InterPlanetary File System stores files by their content hash (the CID). The same file always has the same CID, so storing the CID on-chain proves which exact certificate was approved. Storing the file itself on-chain would be extremely expensive.</p></div></div>
+  <div class="qa"><div class="q">Q19. What is a CID, and what happens if the file disappears from IPFS?</div><div class="a"><p>A content identifier: a hash of the file. If the file stops being pinned, the link stops working, but the CID on-chain still proves what the file was, and anyone holding a copy can re-pin it and get the same CID. Pinata pins our files; for production, pinning with a second provider would be wise.</p></div></div>
+  <div class="qa"><div class="q">Q20. What is an event / log?</div><div class="a"><p>Data a contract emits during a transaction, stored in the receipt's logs. It is cheaper than storage and can be read off-chain. Our indexer rebuilds the database from <code>BatchRegistered</code>, <code>BatchCertified</code>, <code>BatchTransferred</code> and <code>BatchSold</code>.</p></div></div>
+  <div class="qa"><div class="q">Q21. What is a testnet, and what changes on mainnet?</div><div class="a"><p>A network with valueless tokens for testing. For mainnet we would redeploy the same contract, fund the relayer with real POL, use a paid RPC, and start a new database. No code changes are needed (Document 2, section 12).</p></div></div>
+  <div class="qa"><div class="q">Q22. What is a block confirmation, and why does the indexer wait for 2?</div><div class="a"><p>Each block added after the one holding your transaction is one more confirmation. Very recent blocks can occasionally be replaced (a re-organisation), so the indexer only reads blocks at least 2 behind the newest.</p></div></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">07</span>Smart contract</h2>
+  <div class="qa"><div class="q">Q23. Describe your contract.</div><div class="a"><p><code>OrganicTrace.sol</code> stores a <code>Batch</code> struct (id, product, origin, harvest date, farmer id, certificate CID, expiry, status, stage, current owner) in a mapping from batch id, plus an array of <code>Transfer</code> records per batch. Write functions: <code>registerBatch</code>, <code>certifyBatch</code>, <code>transferBatch</code>, <code>markSold</code>. Read functions: <code>getBatch</code>, <code>getHistory</code>, <code>batchExists</code>.</p></div></div>
+  <div class="qa"><div class="q">Q24. What rules does the contract itself enforce?</div><div class="a"><ul><li>No duplicate batch ids.</li><li>Required fields can't be empty, strings are at most 128 bytes, and actor ids can't be zero.</li><li>Approval needs a future expiry and a certificate CID.</li><li>Transfers need status Certified and exactly the next stage; nothing after Retailer.</li><li><code>markSold</code> only at Retailer, and only once.</li><li>A sold batch can't be certified again.</li></ul></div></div>
+  <div class="qa"><div class="q">Q25. How do you prevent stage skipping?</div><div class="a"><p><code>transferBatch</code> takes an explicit <code>toStage</code> and reverts with <code>InvalidStageTransition</code> unless <code>toStage == stage + 1</code> and the current stage is before Retailer. Skipping is expressible but always rejected, and we test exactly that.</p></div></div>
+  <div class="qa"><div class="q">Q26. What access control do you use?</div><div class="a"><p>OpenZeppelin <code>AccessControl</code> with <code>DEFAULT_ADMIN_ROLE</code> (the deployer), <code>RELAYER_ROLE</code> (the backend wallet: register, transfer, sell) and <code>CERTIFIER_ROLE</code> (can certify directly). <code>certifyBatch</code> accepts either a certifier or the relayer.</p></div></div>
+  <div class="qa"><div class="q">Q27. How are users identified on-chain?</div><div class="a"><p>By a <code>bytes32</code> actor id, the keccak256 hash of their account UUID. This keeps names and emails off the public chain, while every action stays linked to a specific account.</p></div></div>
+  <div class="qa"><div class="q">Q28. Why custom errors instead of <code>require</code> strings?</div><div class="a"><p>They are cheaper (no stored strings), and they carry typed arguments, for example <code>InvalidStageTransition(current, requested)</code>. The backend decodes the error name and turns it into a clear message and an HTTP status.</p></div></div>
+  <div class="qa"><div class="q">Q29. Why <code>calldata</code> for string parameters?</div><div class="a"><p>External function arguments in <code>calldata</code> are read in place without being copied to memory, which saves gas.</p></div></div>
+  <div class="qa"><div class="q">Q30. Can a certifier revoke or renew?</div><div class="a"><p>Yes. <code>certifyBatch</code> can be called again until the batch is sold. Approving again sets a new expiry (renewal); rejecting sets status Rejected and clears the expiry (revocation), which blocks further transfers on-chain.</p></div></div>
+  <div class="qa"><div class="q">Q31. Is certificate expiry enforced on-chain?</div><div class="a"><p>Only at certification time: the expiry must be in the future. Blocking transfers after expiry is enforced by the API, and expiry also costs 25 trust points. Checking <code>block.timestamp</code> against the expiry inside <code>transferBatch</code> would be an easy on-chain addition in a future version.</p></div></div>
+  <div class="qa"><div class="q">Q32. Why is Solidity 0.8 safe from overflow?</div><div class="a"><p>From version 0.8, arithmetic reverts on overflow and underflow by default, so SafeMath is no longer needed.</p></div></div>
+  <div class="qa"><div class="q">Q33. Is the contract upgradeable?</div><div class="a"><p>No, deliberately. An upgradeable proxy would let the owner change the rules later, which weakens the trust argument. If the rules must change, a new contract is deployed and the old records stay readable.</p></div></div>
+  <div class="qa"><div class="q">Q34. What is the "naive" contract?</div><div class="a"><p><code>OrganicTraceNaive.sol</code> is never deployed. It stores everything on-chain, including the certificate text (about 1.5 KB) and human-readable history with names. We run the same lifecycle on both to measure the gas difference.</p></div></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">08</span>Backend, relayer and indexer</h2>
+  <div class="qa"><div class="q">Q35. What is the relayer and why use it?</div><div class="a"><p>One server wallet that signs transactions on behalf of logged-in users. Farmers and shopkeepers don't need MetaMask, seed phrases or crypto to pay fees, which is the biggest barrier to adoption. The cost is some decentralisation: users trust the platform to submit what they asked for (see Q66).</p></div></div>
+  <div class="qa"><div class="q">Q36. How do you stop the relayer sending transactions out of order?</div><div class="a"><p>Sends go through a queue, one at a time, using ethers' <code>NonceManager</code>. If a send fails before broadcast, the nonce counter is reset, so there are no gaps.</p></div></div>
+  <div class="qa"><div class="q">Q37. What if a transaction takes too long?</div><div class="a"><p>After <code>TX_TIMEOUT_MS</code> (90 seconds) the API returns <b>202 Accepted</b> with the transaction hash, and the website says "sent, will appear once confirmed". The indexer records it when it lands.</p></div></div>
+  <div class="qa"><div class="q">Q38. What does the indexer do?</div><div class="a"><p>It polls the chain every 5 seconds, reads contract logs in chunks of 1,000 blocks up to 2 blocks behind the head, applies them to the database, recomputes trust scores, and saves the last processed block after each chunk, so it resumes exactly where it stopped after a restart.</p></div></div>
+  <div class="qa"><div class="q">Q39. The API and the indexer both apply the same events. Why no duplicates?</div><div class="a"><p>Event rows are unique on <code>(tx_hash, log_index)</code> with <code>ON CONFLICT DO NOTHING</code>. Batch state only changes when an event is newer than the last one applied, compared by <code>(last_block, last_log_index)</code>. So applying the same event twice, or an older event late, changes nothing. We test both cases.</p></div></div>
+  <div class="qa"><div class="q">Q40. If the database is lost, can you recover?</div><div class="a"><p>The batch history can be rebuilt from chain events by re-indexing from the deploy block; a test checks exactly this. Users, passwords, quantities and units are off-chain and need normal database backups.</p></div></div>
+  <div class="qa"><div class="q">Q41. Why keep a database at all if the chain is the source of truth?</div><div class="a"><p>Speed and search (the trace page needs one quick query instead of several chain calls), plus data that doesn't belong on a public chain: emails, password hashes, alerts. The database is a cache that is checked against the chain.</p></div></div>
+  <div class="qa"><div class="q">Q42. What does the API check before sending a transfer?</div><div class="a"><p>A valid JWT; the user still approved; the user is the current holder and in the role for the batch's stage; registration confirmed; status certified; certificate not expired; and the recipient is approved and in exactly the next role.</p></div></div>
+  <div class="qa"><div class="q">Q43. How is input validated?</div><div class="a"><p>With Zod schemas on every body, query and parameter: lengths, enums, date format, CID pattern, UUIDs. Errors come back as 400 with per-field messages. The contract checks again on its side.</p></div></div>
+  <div class="qa"><div class="q">Q44. How are blockchain errors shown to users?</div><div class="a"><p>Reverts are decoded to the custom error name and mapped to an HTTP status and a plain message, for example <code>InvalidStageTransition</code> → 409 "Batches can only move one stage forward". Network failures become 502 "Blockchain network is unavailable".</p></div></div>
+  <div class="qa"><div class="q">Q45. How do file uploads work?</div><div class="a"><p>Multer keeps the file in memory (5 MB maximum). We detect the real type from its first bytes (PDF, PNG, JPEG, WebP), not from the name, then upload it to Pinata and return the CID. Only farmers and certifiers can upload.</p></div></div>
+  <div class="qa"><div class="q">Q46. How is the QR code generated?</div><div class="a"><p>The <code>qrcode</code> library encodes <code>{site URL}/trace/{batch code}</code> at error-correction level M, as a PNG or SVG. Only the holding retailer or an admin can get it.</p></div></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">09</span>Security</h2>
+  <div class="qa"><div class="q">Q47. How are passwords stored?</div><div class="a"><p>As bcrypt hashes with 10 rounds, which include a salt. Login compares against a dummy hash when the email is unknown, so response time doesn't reveal which emails exist.</p></div></div>
+  <div class="qa"><div class="q">Q48. How does authentication work?</div><div class="a"><p>Login returns a JWT (HS256, 2-hour expiry), set as an <b>HTTP-only, SameSite=Lax</b> cookie (Secure in production), so scripts can't read it. Every protected request verifies the token and <b>reloads the user</b>, so blocking takes effect immediately.</p></div></div>
+  <div class="qa"><div class="q">Q49. How do you prevent XSS and CSRF?</div><div class="a"><p>XSS: React escapes all output, and the token isn't readable by scripts. CSRF: SameSite=Lax cookies aren't sent on cross-site POST requests, CORS allows only our own site, and the browser only ever talks to our own origin, because the website forwards <code>/api</code> to the backend.</p></div></div>
+  <div class="qa"><div class="q">Q50. What about SQL injection?</div><div class="a"><p>Every query uses parameter placeholders (<code>$1, $2…</code>). User input is never concatenated into SQL.</p></div></div>
+  <div class="qa"><div class="q">Q51. What rate limits do you have?</div><div class="a"><p>Failed logins: 20 per 15 minutes per visitor (successful logins don't count). Sign-ups: 10 per hour. Public trace look-ups: 120 per minute. The visitor's real address is passed through the website to the API, so users behind the same server don't share a limit.</p></div></div>
+  <div class="qa"><div class="q">Q52. What if the relayer's private key leaks?</div><div class="a"><p>An attacker could send transactions as the relayer. But the contract still enforces stage order and certification, and every action is public and traceable. The admin revokes <code>RELAYER_ROLE</code> from the old address, grants it to a new wallet, and updates the server. The key lives only in a server environment variable, never in Git.</p></div></div>
+  <div class="qa"><div class="q">Q53. Could an admin fake a batch's history?</div><div class="a"><p>Editing the database is detected at once (R2: the trust score drops, shoppers see a warning, and an alert is raised). Writing to the chain requires going through the contract's rules, and every write is public and permanent. Nobody can rewrite history; they can only add to it, visibly.</p></div></div>
+  <div class="qa"><div class="q">Q54. What other security headers or measures are there?</div><div class="a"><p>Helmet security headers; a JSON body limit of 100 KB; the API refuses to start in production with a localhost site URL; the API isn't publicly exposed; a <code>.dockerignore</code> keeps <code>.env</code> files out of images; and the dependency audit shows 0 known vulnerabilities.</p></div></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">10</span>Fraud engine and trust score</h2>
+  <div class="qa"><div class="q">Q55. Explain the trust score.</div><div class="a"><p>It starts at 100 and subtracts points for each rule that is broken, limited to the range 0–100. R1 uncertified −40; R2 database differs from chain −30; R3 expired certificate −25; R4 more than 3 transfers within any one-hour window, −10 for each extra transfer up to −20; R5 rejected −60, which replaces R1 so that "rejected" (40) and "never reviewed" (60) stay distinguishable.</p></div></div>
+  <div class="qa"><div class="q">Q56. How is R2 (tampering) detected?</div><div class="a"><p>On every look-up, the engine reads <code>getBatch</code> and <code>getHistory</code> from the contract and compares product, origin, status, stage, farmer, current owner, certificate and expiry, and each hand-over's stage, location and recipient. Any difference is listed. A test edits the database directly and confirms the warning appears.</p></div></div>
+  <div class="qa"><div class="q">Q57. Why rule-based and not machine learning?</div><div class="a"><p>There is no labelled fraud data to train on. Rules are explainable: the shopper sees exactly why a score dropped, and they map directly to regulatory concerns such as certification and expiry. ML anomaly detection could be added once real data exists.</p></div></div>
+  <div class="qa"><div class="q">Q58. What if the blockchain is unreachable during a look-up?</div><div class="a"><p>The chain comparison times out after 2.5 seconds. R2 is skipped rather than failed, the page says the blockchain couldn't be reached just now, and the "Verified" stamp needs a successful chain match, so it isn't shown.</p></div></div>
+  <div class="qa"><div class="q">Q59. How are fraud alerts managed?</div><div class="a"><p>At most one open alert per batch and rule. Alerts are created when a rule fires and closed automatically when it clears. An admin can dismiss one after reviewing it, but it reopens if the rule still applies.</p></div></div>
+</section>
+
+<section>
+  <h2><span class="num">11</span>Frontend, testing and cost</h2>
+  <div class="qa"><div class="q">Q60. Why Next.js?</div><div class="a"><p>The public trace page is rendered on the server and streamed, so a phone shows the result quickly without loading much JavaScript. It also handles routing, the <code>/api</code> forwarding, and production builds. The dashboards are client components that call the API.</p></div></div>
+  <div class="qa"><div class="q">Q61. How did you test?</div><div class="a"><p>25 Hardhat tests on the contract: happy path, roles, stage skipping, revocation, duplicates, validation. 58 API tests (Vitest and Supertest) running against a real local Hardhat chain and an in-memory PostgreSQL loaded with our real schema. They cover the full lifecycle, permissions, tamper detection, indexer idempotency and resume, uploads, rate limits and configuration. Plus a scripted end-to-end run through the website (44 checks).</p></div></div>
+  <div class="qa"><div class="q">Q62. What is your test coverage?</div><div class="a"><p>OrganicTrace.sol: 100% of statements, functions and lines, 95.45% of branches. Backend: 87.4% of lines, 89.1% of functions.</p></div></div>
+  <div class="qa"><div class="q">Q63. Explain the gas comparison.</div><div class="a"><p>Both designs run the same lifecycle for 5 batches. The naive design stores the certificate text and readable names on-chain: 2,455,958 gas per batch. Ours stores ids, short fields and the IPFS CID: 1,139,450, which is 53.6% less. Registration shows the biggest difference (1,228,251 vs 304,566) because that is where the certificate text was stored.</p></div></div>
+  <div class="qa"><div class="q">Q64. Your contract costs more to deploy than the naive one. Why?</div><div class="a"><p>It has more code: access control, validation and custom errors (1,949,198 vs 884,029 gas). Deployment happens once; the per-batch saving pays for the difference within the first batch.</p></div></div>
+  <div class="qa"><div class="q">Q65. What does running this cost?</div><div class="a"><p>On the testnet, nothing for gas, and the free tiers are enough for a pilot. On mainnet, about 0.034 POL per batch at 30 gwei, plus hosting, the database and IPFS pinning.</p></div></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">12</span>Hard questions, limitations and future work</h2>
+  <div class="qa"><div class="q">Q66. If the relayer signs everything, isn't it just a centralised system?</div><div class="a"><p>Partly, and we say so. The platform decides <i>who</i> may act, through login and roles. But it can't break the contract's rules, can't change past records, and every action it submits is public and permanent. That gives tamper-evidence and public auditability, which a normal database can't. Full decentralisation would mean every participant signing with their own wallet; the contract already supports that for certifiers through <code>CERTIFIER_ROLE</code>.</p></div></div>
+  <div class="qa"><div class="q">Q67. How do you know the farmer is really organic? Garbage in, garbage out?</div><div class="a"><p>The blockchain can't prove what happened in the field; this is the oracle problem. We rely on an accountable certifier to judge the evidence. The system's value is that the certification can't be forged or backdated, its expiry is enforced, every later hand-over is recorded, and the certifier's decision is permanently attributable.</p></div></div>
+  <div class="qa"><div class="q">Q68. What stops someone copying a QR code onto fake goods?</div><div class="a"><p>The copied code shows the original batch, with its quantity, farmer, journey and "Sold" status, so mismatches are visible to an alert shopper. Stronger protection needs physical measures: per-pack serial QR codes, tamper-evident labels, or scan counting. These are future work.</p></div></div>
+  <div class="qa"><div class="q">Q69. What are the limitations?</div><div class="a"><ul><li>Testnet only.</li><li>Relayer trust (Q66).</li><li>Certifier trust (Q67).</li><li>One QR per batch, not per pack.</li><li>Expiry is enforced by the API, not on-chain, for transfers.</li><li>No password reset.</li><li>English only.</li><li>A processor can't yet add processing notes.</li><li>No PDF export of the journey (PRD FR-15).</li></ul></div></div>
+  <div class="qa"><div class="q">Q70. What is your future scope?</div><div class="a"><p>Mainnet deployment; participants signing with their own wallets; integration with APEDA TraceNet and certification bodies; per-pack QR codes and tamper-evident labels; cold-chain sensors; Hindi and Marathi interfaces with SMS alerts for farmers; batch splitting and merging (for example when processing turns one batch into several products); and an on-chain expiry check in <code>transferBatch</code>.</p></div></div>
+</section>
+
+<section>
+  <h2><span class="num">13</span>Tips for the viva</h2>
+  <ul>
+    <li>Start every answer with the direct answer, then one sentence of reason. Stop when you are done.</li>
+    <li>Use the demo to answer: "Let me show you" is stronger than describing.</li>
+    <li>Admit limitations openly (Q66–Q69). Examiners respect a student who knows the weak points of their own design.</li>
+    <li>Know your own code: be ready to open <code>contracts/OrganicTrace.sol</code> and point to <code>transferBatch</code>, and to open <code>backend/src/services/fraud.ts</code> for the rules.</li>
+    <li>Fill in the <b>[X]%</b> in your abstract with <b>53.6%</b> before submitting.</li>
+  </ul>
+</section>
+
+</body>
+</html>

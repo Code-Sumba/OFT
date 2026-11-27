@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Organic Trace – Project Tracking Pack</title>
+<link rel="stylesheet" href="doc.css">
+<style>
+  table.log { font-size: 8.4pt; }
+  table.log td:first-child { font-family: "IBM Plex Mono", monospace; white-space: nowrap; }
+  .hi { color: #a83a2a; font-weight: 600; } .md { color: #a15c07; font-weight: 600; } .lo { color: #2e5e3e; font-weight: 600; }
+  .blank { border-bottom: 1px solid var(--ink); display: inline-block; min-width: 40mm; }
+  td.fill { height: 9mm; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="38" height="38" fill="none" stroke="#2e5e3e"><circle cx="16" cy="16" r="14.5" stroke-width="1.5"/><circle cx="16" cy="16" r="11.5" stroke-width=".75" stroke-dasharray="1.4 1.6"/><path d="M16 23v-8" stroke-width="1.6" stroke-linecap="round"/><path d="M16 16c0-3.6 2.4-6 6-6 0 3.6-2.4 6-6 6Z" fill="#2e5e3e" stroke="none"/><path d="M16 18.5c0-2.8-1.9-4.7-4.7-4.7 0 2.8 1.9 4.7 4.7 4.7Z" fill="#b7791f" stroke="none"/></svg>
+    <div>Organic Trace<small>FARM · LEDGER · SHELF</small></div>
+  </div>
+  <div>
+    <p class="eyebrow">Document 13 of 13</p>
+    <h1>Project Tracking Pack</h1>
+    <p class="lede">Risk and issue log, change request log, the current status report, and a meeting-notes template, kept up to date until handover.</p>
+  </div>
+  <div class="meta">
+    <div><b>For</b>Project owner and client</div>
+    <div><b>As of</b>27 November 2026</div>
+    <div><b>Target handover</b>1 December 2026</div>
+  </div>
+</div>
+
+<div class="box tip" style="margin-top:0"><b>How to use this pack</b><p>Entries are filled in from the project review of 27 November 2026. Fields marked <span class="blank">&nbsp;</span> (owners, approvers, meeting attendees) are left for the project team: nothing here should be treated as approved until someone has signed it.</p></div>
+
+<section>
+  <h2><span class="num">01</span>Risk log</h2>
+  <p>Risks are things that <i>might</i> happen. Likelihood and impact are High, Medium or Low.</p>
+  <table class="log">
+    <thead><tr><th>ID</th><th>Risk</th><th>L</th><th>I</th><th>Mitigation</th><th>Owner</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>R-01</td><td>The relayer runs out of POL during the demo or in live use; every write fails</td><td class="md">M</td><td class="hi">H</td><td>Fund to ≥ 0.5 POL; check weekly; keep a funded backup wallet</td><td><span class="blank" style="min-width:16mm">&nbsp;</span></td><td>Open</td></tr>
+      <tr><td>R-02</td><td>The Supabase free tier pauses or deletes the database again</td><td class="hi">H</td><td class="hi">H</td><td>Paid plan with backups, or a self-hosted PostgreSQL</td><td><span class="blank" style="min-width:16mm">&nbsp;</span></td><td>Open</td></tr>
+      <tr><td>R-03</td><td>The public Amoy RPC is down or slow</td><td class="md">M</td><td class="md">M</td><td>Backup RPC in <code>.env.example</code>; 202 + indexer path; consider a paid RPC</td><td></td><td>Mitigated</td></tr>
+      <tr><td>R-04</td><td>The testnet faucet is empty or rate-limited when funds are needed</td><td class="md">M</td><td class="md">M</td><td>Collect test POL early from more than one faucet</td><td></td><td>Open</td></tr>
+      <tr><td>R-05</td><td>QR labels printed with the wrong domain</td><td class="lo">L</td><td class="hi">H</td><td>Production check refuses localhost; fix the domain before printing</td><td></td><td>Mitigated</td></tr>
+      <tr><td>R-06</td><td>The relayer private key leaks</td><td class="lo">L</td><td class="hi">H</td><td>Key only in the server environment; revoke the role and rotate if exposed</td><td></td><td>Mitigated</td></tr>
+      <tr><td>R-07</td><td>Pinata free-tier limits reached; uploads fail</td><td class="lo">L</td><td class="md">M</td><td>Keep files small; monitor usage; upgrade the plan</td><td></td><td>Open</td></tr>
+      <tr><td>R-08</td><td>The Docker setup fails on first deployment (not testable locally: Docker isn't installed)</td><td class="md">M</td><td class="md">M</td><td>Deploy a day early; fall back to the non-Docker steps (Document 2, 9B)</td><td></td><td>Open</td></tr>
+      <tr><td>R-09</td><td>The live demo fails on the day</td><td class="md">M</td><td class="hi">H</td><td>Seed demo data; test the link from a phone the day before; record a backup video</td><td></td><td>Open</td></tr>
+      <tr><td>R-10</td><td>The Amoy testnet is reset or deprecated</td><td class="lo">L</td><td class="md">M</td><td>Redeploy (scripted); plan the move to mainnet</td><td></td><td>Accepted</td></tr>
+      <tr><td>R-11</td><td>Scope creep in the last 4 days</td><td class="md">M</td><td class="md">M</td><td>Log every request as a change request (section 3); freeze the scope</td><td></td><td>Open</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page">
+  <h2><span class="num">02</span>Issue log</h2>
+  <p>Issues are problems that <i>exist now</i>.</p>
+  <table class="log">
+    <thead><tr><th>ID</th><th>Issue</th><th>Priority</th><th>Action</th><th>Owner</th><th>Due</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>I-01</td><td>Supabase project no longer exists (<code>tenant/user … not found</code>)</td><td class="hi">Blocker</td><td>Create a new project, update <code>DATABASE_URL</code>, migrate, seed</td><td><span class="blank" style="min-width:14mm">&nbsp;</span></td><td>28 Nov</td><td>Open</td></tr>
+      <tr><td>I-02</td><td>Relayer balance 0.0046 POL; can't send even one transaction</td><td class="hi">Blocker</td><td>Fund with ≥ 0.5 POL from the faucet</td><td></td><td>28 Nov</td><td>Open</td></tr>
+      <tr><td>I-03</td><td><code>DEPLOY_BLOCK</code> is about 4.1M blocks behind; a new database would trigger a long rescan</td><td class="hi">Blocker</td><td>Set it to the current block with the new database</td><td></td><td>28 Nov</td><td>Open</td></tr>
+      <tr><td>I-04</td><td>Production settings not set (<code>NODE_ENV</code>, domain, <code>API_URL</code>)</td><td class="hi">Blocker</td><td>Set during deployment</td><td></td><td>29 Nov</td><td>Open</td></tr>
+      <tr><td>I-05</td><td>Choice of testnet or mainnet for "live" not decided</td><td class="md">High</td><td>Decide with the client; mainnet adds about half a day</td><td></td><td>28 Nov</td><td>Open</td></tr>
+      <tr><td>I-06</td><td>Abstract contains the placeholder "[X]% less gas"</td><td class="md">Medium</td><td>Replace with 53.6%</td><td></td><td>29 Nov</td><td>Open</td></tr>
+      <tr><td>I-07</td><td>Documents carry "[Student Name] / [College Name]" placeholders</td><td class="md">Medium</td><td>Fill in</td><td></td><td>29 Nov</td><td>Open</td></tr>
+      <tr><td>I-08</td><td>No commits in Git yet</td><td class="md">Medium</td><td>Commit to a branch, push, tag v1.0.0</td><td></td><td>28 Nov</td><td>Open</td></tr>
+      <tr><td>I-09</td><td>Live acceptance test and real-phone QR scan not done</td><td class="md">High</td><td>Run Document 10, section 7 after I-01 to I-04</td><td></td><td>30 Nov</td><td>Open</td></tr>
+      <tr><td>I-10</td><td>Rate limits shared by all shoppers on the trace page</td><td class="hi">High</td><td>Fixed: visitor address forwarded, plus a test</td><td>Dev</td><td>27 Nov</td><td class="lo">Closed</td></tr>
+      <tr><td>I-11</td><td>Harvest date shown one day early (IST servers)</td><td class="md">Medium</td><td>Fixed in <code>db.ts</code></td><td>Dev</td><td>27 Nov</td><td class="lo">Closed</td></tr>
+      <tr><td>I-12</td><td>Vulnerable dependencies (Next.js 16.4.0 + 5 backend)</td><td class="hi">High</td><td>Upgraded; audit now 0</td><td>Dev</td><td>27 Nov</td><td class="lo">Closed</td></tr>
+      <tr><td>I-13</td><td>UI looked generic ("AI-generated")</td><td class="md">Medium</td><td>Redesigned (CR-02)</td><td>Dev</td><td>27 Nov</td><td class="lo">Closed</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page">
+  <h2><span class="num">03</span>Change request log</h2>
+  <table class="log">
+    <thead><tr><th>ID</th><th>Date</th><th>Change requested</th><th>Impact (scope / time / cost)</th><th>Approved by</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>CR-01</td><td>27 Nov 2026</td><td>Fix the remaining rate-limit problems and errors; implement the improvements found in the readiness review (expiry blocks transfers, production checks, Docker deployment)</td><td>Behaviour change: expired batches can't be transferred. About 0.5 day. No cost.</td><td><span class="blank">&nbsp;</span></td><td>Done</td></tr>
+      <tr><td>CR-02</td><td>27 Nov 2026</td><td>Redesign the UI so it doesn't look generic / AI-generated</td><td>Visual only; no change to features. About 0.5 day.</td><td><span class="blank">&nbsp;</span></td><td>Done</td></tr>
+      <tr><td>CR-03</td><td>27 Nov 2026</td><td>Documentation: installation, setup, user guide, FAQ, viva, architecture, API, database, coding standards, test plan, quality metrics, release notes, tracking pack</td><td>13 PDFs + OpenAPI file. About 0.5 day.</td><td><span class="blank">&nbsp;</span></td><td>Done</td></tr>
+      <tr><td>CR-04</td><td></td><td>Testnet or mainnet go-live (decision pending, I-05)</td><td>Mainnet: +0.5 day, real POL cost</td><td><span class="blank">&nbsp;</span></td><td>Proposed</td></tr>
+      <tr><td class="fill"></td><td></td><td></td><td></td><td></td><td></td></tr>
+      <tr><td class="fill"></td><td></td><td></td><td></td><td></td><td></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">04</span>Status report: week ending 28 November 2026</h2>
+  <table>
+    <tbody>
+      <tr><td style="width:30%"><b>Overall</b></td><td><b style="color:#a15c07">AMBER</b>: the software is complete and tested, but the live environment needs 4 blocker fixes (I-01 to I-04) before handover on 1 December.</td></tr>
+      <tr><td><b>Schedule</b></td><td>On track if the blockers are cleared by 29 November.</td></tr>
+      <tr><td><b>Scope</b></td><td>All PRD "Must" requirements done. "Could" items FR-14 (partial) and FR-15 (not done) deferred.</td></tr>
+      <tr><td><b>Quality</b></td><td>83/83 automated tests, 44/44 end-to-end checks, 0 known vulnerabilities, contract 100% line coverage.</td></tr>
+    </tbody>
+  </table>
+  <h3>Done this week</h3>
+  <ul>
+    <li>Full readiness review of contract, API, indexer, website and deployment.</li>
+    <li>Fixed: shared rate limit, login lock-out, expired-certificate transfers, the harvest-date bug, logout cookie, migrate path, phone layout.</li>
+    <li>Security upgrades (Next.js 16.4.6, multer, zod and others).</li>
+    <li>Docker deployment files; production configuration checks.</li>
+    <li>Ran the whole system locally end to end (44/44).</li>
+    <li>New UI design.</li>
+    <li>Documentation pack (13 documents + OpenAPI).</li>
+  </ul>
+  <h3>Plan to handover</h3>
+  <table>
+    <thead><tr><th>Date</th><th>Work</th></tr></thead>
+    <tbody>
+      <tr><td>28 Nov</td><td>New Supabase project, fund the relayer, set <code>DEPLOY_BLOCK</code>; decide testnet or mainnet; commit to Git</td></tr>
+      <tr><td>29 Nov</td><td>Deploy with production settings; fill in the placeholders in the documents</td></tr>
+      <tr><td>30 Nov</td><td>Live acceptance test, real-phone QR scan, record a backup demo video</td></tr>
+      <tr><td>1 Dec</td><td>Handover: site link, credentials (sent securely), documents; change the demo passwords</td></tr>
+    </tbody>
+  </table>
+  <h3>Decisions needed from the client</h3>
+  <ul>
+    <li>Testnet (Amoy) or Polygon mainnet for "live"?</li>
+    <li>Final domain name, which is printed in every QR code.</li>
+    <li>Paid Supabase plan (recommended) or another PostgreSQL host?</li>
+  </ul>
+</section>
+
+<section class="page">
+  <h2><span class="num">05</span>Meeting notes template</h2>
+  <table>
+    <tbody>
+      <tr><td style="width:28%"><b>Meeting</b></td><td class="fill"></td></tr>
+      <tr><td><b>Date / time</b></td><td class="fill"></td></tr>
+      <tr><td><b>Attendees</b></td><td class="fill"></td></tr>
+      <tr><td><b>Purpose</b></td><td class="fill"></td></tr>
+    </tbody>
+  </table>
+  <h4>Agenda</h4>
+  <table><tbody><tr><td class="fill">1.</td></tr><tr><td class="fill">2.</td></tr><tr><td class="fill">3.</td></tr></tbody></table>
+  <h4>Discussion notes</h4>
+  <table><tbody><tr><td style="height:40mm"></td></tr></tbody></table>
+  <h4>Decisions made</h4>
+  <table>
+    <thead><tr><th style="width:10%">#</th><th>Decision</th><th style="width:25%">Decided by</th></tr></thead>
+    <tbody><tr><td class="fill"></td><td></td><td></td></tr><tr><td class="fill"></td><td></td><td></td></tr><tr><td class="fill"></td><td></td><td></td></tr></tbody>
+  </table>
+  <h4>Action items</h4>
+  <table>
+    <thead><tr><th style="width:10%">#</th><th>Action</th><th style="width:20%">Owner</th><th style="width:16%">Due</th></tr></thead>
+    <tbody><tr><td class="fill"></td><td></td><td></td><td></td></tr><tr><td class="fill"></td><td></td><td></td><td></td></tr><tr><td class="fill"></td><td></td><td></td><td></td></tr><tr><td class="fill"></td><td></td><td></td><td></td></tr></tbody>
+  </table>
+  <p class="small">Next meeting: <span class="blank">&nbsp;</span></p>
+</section>
+
+</body>
+</html>

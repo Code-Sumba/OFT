@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Organic Trace – Coding and Style Standards</title>
+<link rel="stylesheet" href="doc.css">
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="38" height="38" fill="none" stroke="#2e5e3e"><circle cx="16" cy="16" r="14.5" stroke-width="1.5"/><circle cx="16" cy="16" r="11.5" stroke-width=".75" stroke-dasharray="1.4 1.6"/><path d="M16 23v-8" stroke-width="1.6" stroke-linecap="round"/><path d="M16 16c0-3.6 2.4-6 6-6 0 3.6-2.4 6-6 6Z" fill="#2e5e3e" stroke="none"/><path d="M16 18.5c0-2.8-1.9-4.7-4.7-4.7 0 2.8 1.9 4.7 4.7 4.7Z" fill="#b7791f" stroke="none"/></svg>
+    <div>Organic Trace<small>FARM · LEDGER · SHELF</small></div>
+  </div>
+  <div>
+    <p class="eyebrow">Document 9 of 13</p>
+    <h1>Coding and Style Standards</h1>
+    <p class="lede">The conventions the codebase already follows, written down so that new code stays consistent, plus the checks every change must pass before review.</p>
+  </div>
+  <div class="meta">
+    <div><b>For</b>Anyone changing the code</div>
+    <div><b>Version</b>1.0 · 27 November 2026</div>
+    <div><b>Applies to</b>contracts, backend, frontend</div>
+  </div>
+</div>
+
+<section>
+  <h2><span class="num">01</span>General rules</h2>
+  <ul>
+    <li><b>TypeScript everywhere</b>, with <code>"strict": true</code> (root, backend and frontend). Don't use <code>any</code>; use <code>unknown</code> and narrow it.</li>
+    <li><b>Formatting:</b> 2-space indent, double quotes, semicolons, trailing commas in multi-line lists, lines up to about 140 characters. These are followed by convention; the repository has no formatter configuration yet (see section 8).</li>
+    <li><b>Names:</b> <code>camelCase</code> for variables and functions, <code>PascalCase</code> for types, classes and React components, <code>UPPER_SNAKE_CASE</code> for constants and environment variables, <code>snake_case</code> for database columns.</li>
+    <li><b>Files:</b> backend modules in <code>camelCase.ts</code> (<code>batchCode.ts</code>, <code>ethersClient.ts</code>); React components in <code>PascalCase.tsx</code>; Next.js routes as lower-case folders with <code>page.tsx</code>.</li>
+    <li><b>Comments explain why</b>, not what. Every exported function or class that isn't obvious gets a one-line <code>/** … */</code> summary.</li>
+    <li><b>Small, focused functions.</b> Routes stay thin and push logic into <code>services/</code> and <code>repositories/</code>.</li>
+    <li><b>No secrets in code or Git.</b> Configuration comes only from environment variables, declared and validated in <code>backend/src/config.ts</code> and listed in <code>.env.example</code>.</li>
+    <li><b>Dependencies:</b> pin exact versions in <code>package.json</code> (as the project does) and commit the lock files. Run <code>npm audit --omit=dev</code> before each release.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">02</span>Solidity</h2>
+  <ul>
+    <li>Pin the compiler (<code>pragma solidity ^0.8.24</code>; Hardhat compiles with 0.8.24, optimizer 200 runs).</li>
+    <li>Use OpenZeppelin for access control; never roll your own role logic.</li>
+    <li><b>Custom errors</b> (<code>error BatchNotFound(string batchId)</code>), not <code>require</code> strings. Add each new error to <code>REVERT_MESSAGES</code> in <code>backend/src/chain/errors.ts</code>.</li>
+    <li>Events in the past tense (<code>BatchTransferred</code>), carrying enough data for the indexer to rebuild state.</li>
+    <li>Strings as <code>calldata</code> in external functions; check lengths (≤ <code>MAX_STRING_LENGTH</code>).</li>
+    <li>Private state and helpers start with <code>_</code> (<code>_batches</code>, <code>_existing</code>). Constants are <code>UPPER_CASE</code>.</li>
+    <li>NatSpec (<code>@notice</code>, <code>@dev</code>, <code>@param</code>) on every public function.</li>
+    <li>Order checks, then effects, then events. No external calls in this contract.</li>
+    <li>Any contract change: <code>npm run compile</code> (re-exports the ABI), add tests, run <code>npm run test:gas</code>, update Document 6.</li>
+  </ul>
+</section>
+
+<section class="page">
+  <h2><span class="num">03</span>Backend (Node.js / Express)</h2>
+  <ul>
+    <li><b>ES modules</b> with explicit <code>.js</code> extensions in relative imports (<code>import { ok } from "../lib/http.js"</code>), as <code>module: nodenext</code> requires.</li>
+    <li><b>Validate every input</b> with a Zod schema via <code>parse(schema, req.body | req.query | req.params)</code>. Never read a request field without validating it first.</li>
+    <li><b>Errors:</b> throw the helpers in <code>lib/http.ts</code> (<code>badRequest</code>, <code>forbidden</code>, <code>notFound</code>, <code>conflict</code>). Express 5 forwards async errors to <code>errorHandler</code>. Never send raw error messages or stack traces to the client.</li>
+    <li><b>Responses:</b> always through <code>ok(res, data, status)</code>, which gives the <code>{ success, data }</code> envelope.</li>
+    <li><b>Authorisation</b> on every router: <code>requireAuth</code> then <code>requireRole(...)</code>. Business checks (current holder, next role) live next to the route and are covered by tests.</li>
+    <li><b>SQL:</b> only in <code>repositories/</code> or small, clearly named queries. Always parameterised (<code>$1</code>); never interpolate user input. Build dynamic <code>WHERE</code> clauses from fixed fragments plus parameters.</li>
+    <li><b>Blockchain writes</b> only through <code>sendAndApply(db, trust, () =&gt; chain.method(...))</code>, so events are applied and trust is recomputed consistently.</li>
+    <li><b>Event handling must stay idempotent</b>: use unique keys plus <code>ON CONFLICT DO NOTHING</code>, and the <code>(last_block, last_log_index)</code> guard.</li>
+    <li><b>No emails in public responses</b>: use <code>loadParties</code> / <code>Party</code>.</li>
+    <li><b>Dependencies are injected</b> (<code>createApp({ db, config, chain, ipfs })</code>), so tests can supply an in-memory database and a fake IPFS client.</li>
+    <li><b>Logging:</b> <code>console.error</code> for unexpected errors, <code>console.warn</code> for recoverable ones. Never log secrets, tokens or passwords.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">04</span>Frontend (Next.js / React)</h2>
+  <ul>
+    <li>App Router. Pages that need the session are client components wrapped in <code>&lt;AppShell roles={[...]}&gt;</code>. The public trace page is a server component that streams inside <code>&lt;Suspense&gt;</code>.</li>
+    <li>Call the API only through <code>api()</code> / <code>useApi()</code> in <code>lib/api.ts</code> (same-origin <code>/api</code>). Show <code>ApiError.readable</code> to users.</li>
+    <li>Shared types live in <code>lib/types.ts</code> and must match <code>backend/src/services/presenter.ts</code>.</li>
+    <li>Styling: Tailwind utility classes plus the design tokens in <code>app/globals.css</code> (<code>bg-surface</code>, <code>text-muted</code>, <code>border-rule</code>, <code>text-brand</code>…). <b>Never hard-code colours</b>; add a token instead. It must work in light and dark mode.</li>
+    <li>Reuse the components in <code>components/ui.tsx</code> (<code>Button</code>, <code>Card</code>, <code>Field</code>, <code>Input</code>, <code>Notice</code>, <code>Pill</code>) before creating new ones.</li>
+    <li>Display text: plain words, sentence case, no jargon for shoppers ("Recorded on the blockchain", not "tx mined").</li>
+    <li>Accessibility: labels on every input, <code>aria-label</code> on icon-only buttons, visible focus, native <code>&lt;dialog&gt;</code> for modals.</li>
+    <li>Responsive down to 360 px wide: tables turn into cards on phones (see <code>BatchTable</code>), with no sideways scrolling.</li>
+    <li><code>npm run lint</code> (ESLint, Next.js core-web-vitals and TypeScript rules) must pass.</li>
+  </ul>
+</section>
+
+<section class="page">
+  <h2><span class="num">05</span>Tests</h2>
+  <ul>
+    <li>Every bug fix comes with a test that fails before the fix.</li>
+    <li>Contract: Hardhat + Chai in <code>test/</code>. Test the happy path, every revert and every role.</li>
+    <li>API: Vitest + Supertest in <code>backend/test/</code>. Use <code>setup()</code> from <code>helpers.ts</code> (real local chain + pg-mem with the real schema). Test permissions (401/403), validation (400) and state conflicts (409), not just success.</li>
+    <li>Pure logic (fraud rules) gets plain unit tests.</li>
+    <li>Test names describe behaviour: <code>"cannot transfer once the certificate has expired, until it is renewed"</code>.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">06</span>Git and commits</h2>
+  <ul>
+    <li><code>main</code> is always deployable. Work on short branches: <code>feature/…</code>, <code>fix/…</code>, <code>docs/…</code>.</li>
+    <li>Commit messages: imperative summary of 72 characters or fewer, a blank line, then why. Example: <code>Block transfers of batches with an expired certificate</code>.</li>
+    <li>One logical change per commit; don't mix formatting with behaviour changes.</li>
+    <li>Never commit <code>.env</code>, keys, <code>node_modules</code>, <code>.next</code>, <code>dist</code> or <code>artifacts</code> (all in <code>.gitignore</code>).</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">07</span>Review checklist (before merging)</h2>
+  <table>
+    <thead><tr><th style="width:8%">✓</th><th>Check</th></tr></thead>
+    <tbody>
+      <tr><td>☐</td><td><code>npm test</code> (root), <code>npm --prefix backend test</code> and <code>npm --prefix backend run typecheck</code> pass</td></tr>
+      <tr><td>☐</td><td><code>npm --prefix frontend run lint</code> and <code>npm --prefix frontend run build</code> pass</td></tr>
+      <tr><td>☐</td><td>New input is validated with Zod; new routes have auth and role checks and tests for 401/403/400</td></tr>
+      <tr><td>☐</td><td>No secrets, emails or private keys in code, logs or responses</td></tr>
+      <tr><td>☐</td><td>SQL is parameterised; event handling is still idempotent</td></tr>
+      <tr><td>☐</td><td>UI works on a phone and in dark mode; colours come from tokens</td></tr>
+      <tr><td>☐</td><td>New environment variables are added to <code>config.ts</code>, <code>.env.example</code> and Document 2</td></tr>
+      <tr><td>☐</td><td>Contract changes: ABI re-exported, gas report reviewed, documents updated</td></tr>
+      <tr><td>☐</td><td><code>npm audit --omit=dev</code> shows no high or critical issues</td></tr>
+      <tr><td>☐</td><td>Changelog (Document 12) updated</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">08</span>Recommended additions</h2>
+  <p>These aren't in the repository yet, and are suggested to enforce the rules above automatically:</p>
+  <ul>
+    <li><b>Prettier</b> with <code>{ "printWidth": 140 }</code>, applied to all three packages, to match the current style.</li>
+    <li><b>ESLint for the backend</b> (typescript-eslint recommended rules).</li>
+    <li><b>CI</b> (for example GitHub Actions) running the checklist commands on every pull request.</li>
+    <li><b>solhint</b> for the Solidity code.</li>
+  </ul>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+# Never ship secrets or local builds into images
+**/.env
+**/.env.*
+!.env.example
+**/node_modules
+**/.next
+**/dist
+**/*.tsbuildinfo
+artifacts
+cache
+typechain-types
+coverage
+.git
+docs
+demo-certificates

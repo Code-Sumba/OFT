@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Organic Trace – Installation Guide</title>
+<link rel="stylesheet" href="doc.css">
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="38" height="38" fill="none" stroke="#2e5e3e"><circle cx="16" cy="16" r="14.5" stroke-width="1.5"/><circle cx="16" cy="16" r="11.5" stroke-width=".75" stroke-dasharray="1.4 1.6"/><path d="M16 23v-8" stroke-width="1.6" stroke-linecap="round"/><path d="M16 16c0-3.6 2.4-6 6-6 0 3.6-2.4 6-6 6Z" fill="#2e5e3e" stroke="none"/><path d="M16 18.5c0-2.8-1.9-4.7-4.7-4.7 0 2.8 1.9 4.7 4.7 4.7Z" fill="#b7791f" stroke="none"/></svg>
+    <div>Organic Trace<small>FARM · LEDGER · SHELF</small></div>
+  </div>
+  <div>
+    <p class="eyebrow">Document 1 of 13</p>
+    <h1>Installation Guide</h1>
+    <p class="lede">How to install Organic Trace on a computer, run it end to end on a private local blockchain, and confirm that everything works.</p>
+  </div>
+  <div class="meta">
+    <div><b>For</b>Developers and technical staff</div>
+    <div><b>Version</b>1.0 · 27 November 2026</div>
+    <div><b>Next document</b>2 · Setup and Deployment</div>
+  </div>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><span>01</span>What you are installing</li>
+    <li><span>02</span>Requirements</li>
+    <li><span>03</span>Get the project files</li>
+    <li><span>04</span>Install the dependencies</li>
+    <li><span>05</span>Run everything locally</li>
+    <li><span>06</span>Check that it works</li>
+    <li><span>07</span>Project folders</li>
+    <li><span>08</span>Useful commands</li>
+    <li><span>09</span>Troubleshooting</li>
+  </ol>
+</div>
+
+<section>
+  <h2><span class="num">01</span>What you are installing</h2>
+  <p>Organic Trace records organic produce from the farm to the shop shelf. A shopper scans a QR code on the pack and sees the batch's full journey, its organic certificate and a trust score. Each step is also written to the Polygon blockchain, where nobody can quietly change it.</p>
+  <p>The project has four parts. On a computer, all four run at the same time:</p>
+  <div class="flow">
+    <div><b>Website</b>Next.js, port 3000. What people see in the browser.</div><i>→</i>
+    <div><b>API</b>Express, port 4000. Logins, rules, and sending transactions.</div><i>→</i>
+    <div><b>Database</b>PostgreSQL. Users, batches, alerts.</div>
+  </div>
+  <div class="flow">
+    <div><b>Smart contract</b>Solidity, on Polygon Amoy (or a local Hardhat chain). The permanent record.</div><i>←</i>
+    <div><b>Indexer</b>A background process that copies blockchain events into the database.</div>
+  </div>
+  <p>This guide installs everything on <b>one computer</b>, using a private local blockchain, so you can try the whole system without wallets, test money or online accounts. Document 2 (Setup and Deployment) explains how to connect it to the real Polygon network and put it online.</p>
+</section>
+
+<section>
+  <h2><span class="num">02</span>Requirements</h2>
+  <table>
+    <thead><tr><th>Item</th><th>Version / size</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Operating system</td><td>Windows 10/11, macOS or Linux</td><td>Every command in this guide works in Git Bash on Windows, or in a terminal on macOS and Linux.</td></tr>
+      <tr><td>Node.js</td><td>20 LTS (recommended)</td><td>Download from <code>nodejs.org</code>. Newer versions work, but Hardhat prints a warning on them.</td></tr>
+      <tr><td>Git</td><td>Any recent version</td><td>Only needed if you get the code from a Git repository.</td></tr>
+      <tr><td>PostgreSQL</td><td>15, 16 or 17</td><td>For a fully local setup. You can use a free Supabase database instead (see Document 2).</td></tr>
+      <tr><td>Memory / disk</td><td>8 GB RAM, 3 GB free disk</td><td>Most of the disk space goes on <code>node_modules</code>.</td></tr>
+      <tr><td>Browser</td><td>Chrome, Edge, Firefox or Safari</td><td>A phone is useful for testing QR codes.</td></tr>
+      <tr><td>Internet</td><td>Needed while installing</td><td>To download packages and fonts.</td></tr>
+    </tbody>
+  </table>
+  <p>Check the installed versions:</p>
+<pre>node -v        <span class="c"># should print v20.x (or newer)</span>
+npm -v
+git --version
+psql --version <span class="c"># only if PostgreSQL is installed locally</span></pre>
+</section>
+
+<section>
+  <h2><span class="num">03</span>Get the project files</h2>
+  <p>Either copy the project folder you were given (for example from a ZIP file), or clone it from the repository:</p>
+<pre>git clone &lt;repository-url&gt; organic-trace
+cd organic-trace</pre>
+  <p>The folder must contain <code>contracts/</code>, <code>backend/</code>, <code>frontend/</code>, <code>db/</code> and <code>package.json</code>. Every command below starts from this folder (the <b>project root</b>).</p>
+  <div class="box warn"><b>Secrets</b><p>Never copy a <code>.env</code> file from someone else's computer, and never send one by email or chat. These files hold private keys and passwords. Create your own from <code>.env.example</code>, as described below.</p></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">04</span>Install the dependencies</h2>
+  <p>The project has three separate Node.js packages: the smart-contract tools (project root), the API, and the website. Install all three:</p>
+<pre><span class="c"># 1. Smart contract tools (Hardhat) – project root</span>
+npm install
+
+<span class="c"># 2. API and indexer</span>
+npm --prefix backend install
+
+<span class="c"># 3. Website</span>
+npm --prefix frontend install</pre>
+  <p>This takes a few minutes the first time. When it finishes, compile the contract and run its tests:</p>
+<pre>npm run compile   <span class="c"># compiles OrganicTrace.sol and copies its ABI to the backend</span>
+npm test          <span class="c"># 25 contract tests should pass</span></pre>
+  <div class="box tip"><b>Tip</b><p>If <code>npm install</code> stops with a network error, run it again; it carries on from where it stopped. On a slow connection, install one package at a time.</p></div>
+</section>
+
+<section>
+  <h2><span class="num">05</span>Run everything locally</h2>
+  <p>In local mode the blockchain is a private Hardhat network on your computer. It starts with test accounts that already hold test money, and transactions confirm instantly. You will need <b>five terminal windows</b>.</p>
+
+  <h3>5.1 Start the local blockchain (terminal 1)</h3>
+<pre>npm run node</pre>
+  <p>Leave it running. It prints 20 test accounts with their private keys. <b>Account #0</b> is used below as the relayer (the wallet the API signs transactions with). These keys are public test keys: never send real money to them.</p>
+
+  <h3>5.2 Deploy the contract (terminal 2)</h3>
+<pre>npm run deploy:localhost</pre>
+  <p>This writes <code>deployments/localhost.json</code>, which contains the contract <b>address</b> and <b>deployBlock</b>. On a fresh Hardhat node the address is usually <code>0x5FbDB2315678afecb367f032d93F642f64180aa3</code>.</p>
+
+  <h3>5.3 Create the database</h3>
+  <p>Create an empty PostgreSQL database, for example called <code>organic</code>:</p>
+<pre>createdb -U postgres organic</pre>
+  <p>Or use pgAdmin. If you are using Supabase instead, skip this step and use its connection string.</p>
+
+  <h3>5.4 Create <code>backend/.env</code></h3>
+  <p>Copy the example file, then set these values for local mode:</p>
+<pre>cp .env.example backend/.env</pre>
+<pre>NODE_ENV=development
+DATABASE_URL=postgresql://postgres:YOUR_DB_PASSWORD@localhost:5432/organic
+RPC_URL=http://127.0.0.1:8545
+<span class="c"># Hardhat test account #0 (public test key, local use only)</span>
+RELAYER_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+CONTRACT_ADDRESS=&lt;address from deployments/localhost.json&gt;
+DEPLOY_BLOCK=1
+MIN_PRIORITY_FEE_GWEI=0
+INDEXER_CONFIRMATIONS=0
+JWT_SECRET=&lt;at least 32 random characters&gt;
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD=&lt;choose a password&gt;
+DEMO_PASSWORD=&lt;choose a password for the demo users&gt;
+PINATA_JWT=          <span class="c"># leave empty: certificate uploads are switched off</span></pre>
+  <p>To generate a <code>JWT_SECRET</code>:</p>
+<pre>node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"</pre>
+
+  <h3>5.5 Create the tables and the first users</h3>
+<pre>cd backend
+npm run db:migrate   <span class="c"># creates the tables from db/schema.sql</span>
+npm run db:seed      <span class="c"># creates the admin and one demo user per role</span></pre>
+  <p>The seed command creates the admin account from <code>ADMIN_EMAIL</code> and <code>ADMIN_PASSWORD</code>. Because <code>DEMO_PASSWORD</code> is set, it also creates <code>farmer@demo.local</code>, <code>certifier@demo.local</code>, <code>processor@demo.local</code>, <code>distributor@demo.local</code> and <code>retailer@demo.local</code>. You can run it again safely; it skips accounts that already exist.</p>
+
+  <h3>5.6 Start the API, the indexer and the website</h3>
+<pre><span class="c"># terminal 3 – API on http://localhost:4000</span>
+cd backend &amp;&amp; npm run dev
+
+<span class="c"># terminal 4 – indexer (copies blockchain events into the database)</span>
+cd backend &amp;&amp; npm run dev:indexer
+
+<span class="c"># terminal 5 – website on http://localhost:3000</span>
+cd frontend &amp;&amp; npm run dev</pre>
+  <p>Open <b>http://localhost:3000</b> in a browser.</p>
+  <div class="box"><b>Certificate files in local mode</b><p>With <code>PINATA_JWT</code> empty, file uploads are switched off and the API logs <i>"PINATA_JWT not set: file uploads are disabled"</i>. You can still register batches without a file. A certifier cannot approve a batch that has no certificate, though, so for a full local test add a Pinata key (Document 2, step 2).</p></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">06</span>Check that it works</h2>
+  <h3>6.1 Automated tests</h3>
+<pre>npm test                   <span class="c"># project root: 25 smart-contract tests</span>
+npm --prefix backend test  <span class="c"># 58 API tests (starts its own Hardhat node and in-memory database)</span></pre>
+  <p>Both should finish with every test passing. The API tests take about a minute and a half.</p>
+
+  <h3>6.2 A quick manual walk-through</h3>
+  <ol class="steps">
+    <li>Log in as <code>farmer@demo.local</code> and register a batch, for example "Basmati Rice, 250 kg, Dehradun".</li>
+    <li>Log out, log in as <code>certifier@demo.local</code>, click <b>Review</b> and approve the batch with an expiry date (this needs a certificate file; see the note in 5.6).</li>
+    <li>Log in as the farmer again and <b>Transfer →</b> the batch to the processor. Then, as the processor, transfer it to the distributor, and as the distributor, to the retailer.</li>
+    <li>As <code>retailer@demo.local</code>, open <b>QR label</b>, then <b>Mark sold</b>.</li>
+    <li>Log out and open <code>http://localhost:3000/trace/&lt;batch code&gt;</code>. You should see <b>✓ Verified organic</b>, trust score 100, and six steps in the journey.</li>
+  </ol>
+  <p>For screenshots of each screen, see Document 3 (Website User Guide).</p>
+
+  <h3>6.3 Ports in use</h3>
+  <table>
+    <thead><tr><th>Port</th><th>Program</th><th>Started by</th></tr></thead>
+    <tbody>
+      <tr><td><code>3000</code></td><td>Website (Next.js)</td><td><code>npm run dev</code> in <code>frontend</code></td></tr>
+      <tr><td><code>4000</code></td><td>API (Express)</td><td><code>npm run dev</code> in <code>backend</code></td></tr>
+      <tr><td><code>8545</code></td><td>Local blockchain (Hardhat)</td><td><code>npm run node</code> in the root</td></tr>
+      <tr><td><code>5432</code></td><td>PostgreSQL</td><td>Your PostgreSQL service</td></tr>
+    </tbody>
+  </table>
+  <div class="box warn"><b>The local chain forgets everything when it stops</b><p>A Hardhat node keeps its data in memory. If you stop and restart it, deploy the contract again and start with an empty database (drop and recreate it, then run <code>db:migrate</code> and <code>db:seed</code>). Otherwise the database will refer to batches that no longer exist on the chain, and the trust score will flag them.</p></div>
+</section>
+
+<section>
+  <h2><span class="num">07</span>Project folders</h2>
+  <table>
+    <thead><tr><th>Folder</th><th>Contents</th></tr></thead>
+    <tbody>
+      <tr><td><code>contracts/</code></td><td><code>OrganicTrace.sol</code>, the deployed smart contract. <code>naive/</code> holds a comparison version used only for the gas analysis.</td></tr>
+      <tr><td><code>test/</code></td><td>Smart-contract tests (Hardhat + Chai).</td></tr>
+      <tr><td><code>scripts/</code></td><td>Contract deployment, ABI export, gas report.</td></tr>
+      <tr><td><code>deployments/</code></td><td>Address, ABI and deploy block for each network (<code>amoy.json</code>).</td></tr>
+      <tr><td><code>backend/src/</code></td><td>API routes, blockchain client, indexer, fraud engine, database access.</td></tr>
+      <tr><td><code>backend/test/</code></td><td>API tests (Vitest + Supertest).</td></tr>
+      <tr><td><code>frontend/src/</code></td><td>Website pages (<code>app/</code>), shared components and helpers.</td></tr>
+      <tr><td><code>db/schema.sql</code></td><td>Database tables.</td></tr>
+      <tr><td><code>demo-certificates/</code></td><td>Sample certificate PDFs to upload during demos.</td></tr>
+      <tr><td><code>docs/</code></td><td>PRD, TRD, roadmap, tech stack, and these guides.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page">
+  <h2><span class="num">08</span>Useful commands</h2>
+  <table>
+    <thead><tr><th>Where</th><th>Command</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td>root</td><td><code>npm run compile</code></td><td>Compile the contract and copy its ABI to the backend</td></tr>
+      <tr><td>root</td><td><code>npm test</code></td><td>Run the smart-contract tests</td></tr>
+      <tr><td>root</td><td><code>npm run test:gas</code></td><td>Tests with a gas-cost table</td></tr>
+      <tr><td>root</td><td><code>npm run node</code></td><td>Start a local blockchain</td></tr>
+      <tr><td>root</td><td><code>npm run deploy:localhost</code></td><td>Deploy to the local blockchain</td></tr>
+      <tr><td>root</td><td><code>npm run deploy:amoy</code></td><td>Deploy to Polygon Amoy (Document 2)</td></tr>
+      <tr><td>root</td><td><code>npx hardhat run scripts/gas-report.ts</code></td><td>Regenerate the gas comparison shown in the admin panel</td></tr>
+      <tr><td>backend</td><td><code>npm run dev</code> / <code>npm run dev:indexer</code></td><td>Start the API / indexer (restart automatically when code changes)</td></tr>
+      <tr><td>backend</td><td><code>npm run build</code> then <code>npm start</code> / <code>npm run start:indexer</code></td><td>Production build and start</td></tr>
+      <tr><td>backend</td><td><code>npm run db:migrate</code> / <code>npm run db:seed</code></td><td>Create tables / create admin and demo users</td></tr>
+      <tr><td>backend</td><td><code>npm test</code> / <code>npm run typecheck</code></td><td>API tests / type check</td></tr>
+      <tr><td>frontend</td><td><code>npm run dev</code></td><td>Website in development mode</td></tr>
+      <tr><td>frontend</td><td><code>npm run build</code> then <code>npm start</code></td><td>Production build and start</td></tr>
+      <tr><td>frontend</td><td><code>npm run lint</code></td><td>Check the code style</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">09</span>Troubleshooting</h2>
+  <table>
+    <thead><tr><th style="width:38%">Problem</th><th>Cause and fix</th></tr></thead>
+    <tbody>
+      <tr><td><code>Invalid environment configuration</code> when starting the API</td><td>A required value in <code>backend/.env</code> is missing or wrong. The message names it, for example <code>JWT_SECRET must be at least 32 characters</code> or <code>CONTRACT_ADDRESS: must be a contract address</code>.</td></tr>
+      <tr><td><code>DATABASE_URL is not set</code></td><td>Run the command from inside <code>backend/</code>, so it finds <code>backend/.env</code>.</td></tr>
+      <tr><td><code>ECONNREFUSED 127.0.0.1:5432</code> or <code>password authentication failed</code></td><td>PostgreSQL isn't running, or the user name or password in <code>DATABASE_URL</code> is wrong.</td></tr>
+      <tr><td><code>ECONNREFUSED 127.0.0.1:8545</code>, or "Blockchain network is unavailable" in the website</td><td>The local Hardhat node isn't running. Start it with <code>npm run node</code>.</td></tr>
+      <tr><td>"The relayer wallet is not authorised on the contract"</td><td>The contract was deployed with a different relayer. Deploy again, or make <code>RELAYER_PRIVATE_KEY</code> match the relayer printed by the deploy script.</td></tr>
+      <tr><td><code>EADDRINUSE</code> (port already in use)</td><td>Another copy is already running. Close it, or use another port (<code>PORT=4001</code>, or <code>npm run dev -- -p 3001</code> for the website).</td></tr>
+      <tr><td>The website says "Cannot reach the server. Is the backend running?"</td><td>The API on port 4000 isn't running. If it runs elsewhere, set <code>API_URL</code> before starting the website.</td></tr>
+      <tr><td>"File uploads are not configured on this server"</td><td><code>PINATA_JWT</code> is empty. This is expected in local mode; see Document 2, step 2.</td></tr>
+      <tr><td>Hardhat warns about the Node.js version</td><td>Harmless. Use Node.js 20 LTS to remove it.</td></tr>
+      <tr><td>A batch keeps showing "(confirming…)"</td><td>The indexer isn't running. Start it with <code>npm run dev:indexer</code>.</td></tr>
+      <tr><td>Login returns "Your account is awaiting admin approval"</td><td>New accounts start as <i>pending</i>. Log in as admin, open <b>Users</b> and click <b>Approve</b>.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</body>
+</html>

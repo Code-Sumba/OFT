@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Organic Trace – Website User Guide</title>
+<link rel="stylesheet" href="doc.css">
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="38" height="38" fill="none" stroke="#2e5e3e"><circle cx="16" cy="16" r="14.5" stroke-width="1.5"/><circle cx="16" cy="16" r="11.5" stroke-width=".75" stroke-dasharray="1.4 1.6"/><path d="M16 23v-8" stroke-width="1.6" stroke-linecap="round"/><path d="M16 16c0-3.6 2.4-6 6-6 0 3.6-2.4 6-6 6Z" fill="#2e5e3e" stroke="none"/><path d="M16 18.5c0-2.8-1.9-4.7-4.7-4.7 0 2.8 1.9 4.7 4.7 4.7Z" fill="#b7791f" stroke="none"/></svg>
+    <div>Organic Trace<small>FARM · LEDGER · SHELF</small></div>
+  </div>
+  <div>
+    <p class="eyebrow">Document 3 of 13</p>
+    <h1>Website User Guide</h1>
+    <p class="lede">Step-by-step help for everyone who uses Organic Trace: shoppers, farmers, certifiers, processors, distributors, retailers and administrators.</p>
+  </div>
+  <div class="meta">
+    <div><b>For</b>Everyone who uses the website</div>
+    <div><b>Version</b>1.0 · 27 November 2026</div>
+    <div><b>Related</b>4 · FAQ and Troubleshooting</div>
+  </div>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><span>01</span>How Organic Trace works</li>
+    <li><span>02</span>Creating an account and logging in</li>
+    <li><span>03</span>For shoppers: checking a product</li>
+    <li><span>04</span>For farmers</li>
+    <li><span>05</span>For certifiers</li>
+    <li><span>06</span>For processors and distributors</li>
+    <li><span>07</span>For retailers</li>
+    <li><span>08</span>The batch details page</li>
+    <li><span>09</span>For administrators</li>
+    <li><span>10</span>How the trust score works</li>
+    <li><span>11</span>Messages you may see</li>
+  </ol>
+</div>
+
+<section>
+  <h2><span class="num">01</span>How Organic Trace works</h2>
+  <p>A <b>batch</b> is one harvest of one product, for example 250 kg of basmati rice from one farm. Each batch gets a code such as <code>OT-2026-7KQ3MZ</code>. As the batch moves along the supply chain, each person who handles it records the step on the website. Every step is also written to the Polygon blockchain, where nobody can change it afterwards.</p>
+  <div class="flow">
+    <div><b>Farmer</b>registers the harvest</div><i>→</i>
+    <div><b>Certifier</b>approves or rejects</div><i>→</i>
+    <div><b>Processor</b>takes custody</div><i>→</i>
+    <div><b>Distributor</b>takes custody</div><i>→</i>
+    <div><b>Retailer</b>prints the QR label, sells</div><i>→</i>
+    <div><b>Shopper</b>scans and checks</div>
+  </div>
+  <table>
+    <thead><tr><th>Role</th><th>What they do on the website</th></tr></thead>
+    <tbody>
+      <tr><td><b>Shopper</b></td><td>Scans the QR code or types the batch code. No account needed.</td></tr>
+      <tr><td><b>Farmer</b></td><td>Registers harvest batches, uploads the organic certificate, and hands certified batches to a processor.</td></tr>
+      <tr><td><b>Certifier</b></td><td>Checks each batch's certificate, then approves it (with an expiry date) or rejects it. Can renew or revoke later.</td></tr>
+      <tr><td><b>Processor / Distributor</b></td><td>Receives batches, then hands them to the next stage.</td></tr>
+      <tr><td><b>Retailer</b></td><td>Receives batches, prints QR labels, and marks batches sold.</td></tr>
+      <tr><td><b>Administrator</b></td><td>Approves new accounts, blocks accounts, reviews fraud alerts and watches activity.</td></tr>
+    </tbody>
+  </table>
+  <div class="box"><b>Rules the system enforces</b>
+    <ul>
+      <li>A batch must be <b>certified</b> before anyone can transfer it, and its certificate must not have <b>expired</b>.</li>
+      <li>Batches move <b>forward one stage at a time</b>. A farmer cannot send straight to a retailer, and nothing can go backwards.</li>
+      <li>Only the <b>current holder</b> can move a batch, and only to someone in the <b>next role</b>.</li>
+      <li>Once recorded, a step <b>cannot be undone or edited</b>.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="page">
+  <h2><span class="num">02</span>Creating an account and logging in</h2>
+  <p>Shoppers don't need an account. Everyone else in the supply chain does.</p>
+  <ol class="steps">
+    <li>Click <b>Join the chain</b> at the top right of any page.</li>
+    <li>Enter your full name, your organisation (optional), your <b>role</b>, your email and a password of at least 8 characters.</li>
+    <li>Click <b>Create account</b>. You'll see "Registration received".</li>
+    <li>Wait for an administrator to approve your account. Until then, logging in shows "Your account is awaiting admin approval".</li>
+    <li>Once approved, click <b>Log in</b> and enter your email and password. You go straight to your own dashboard.</li>
+  </ol>
+  <div class="grid2">
+    <figure><img src="img/02-register.png"><figcaption>Sign-up page</figcaption></figure>
+    <figure><img src="img/03-login.png"><figcaption>Login page</figcaption></figure>
+  </div>
+  <p class="small">For security, a session lasts 2 hours. After that, log in again. Click <b>Log out</b> (top right) on shared computers. Administrator accounts can't be created from the sign-up page.</p>
+</section>
+
+<section class="page">
+  <h2><span class="num">03</span>For shoppers: checking a product</h2>
+  <ol class="steps">
+    <li><b>Scan the QR code</b> on the pack with your phone camera. It opens the product's page in the browser; no app is needed.</li>
+    <li>No scanner? Go to the home page, type the code printed under the QR (for example <code>OT-2026-7KQ3MZ</code>) into the box, and click <b>Verify</b>.</li>
+  </ol>
+  <figure><img src="img/01-home.png"><figcaption>Home page: type a batch code and click Verify</figcaption></figure>
+</section>
+
+<section class="page">
+  <h3>Reading the product page</h3>
+  <figure><img src="img/13-trace.png" style="max-height:175mm;object-fit:contain;object-position:top"><figcaption>A verified batch: stamp, trust score 100/100, certificate, journey and blockchain check</figcaption></figure>
+  <table>
+    <thead><tr><th style="width:30%">Part of the page</th><th>What it tells you</th></tr></thead>
+    <tbody>
+      <tr><td><b>Stamp</b></td><td><b>✓ Verified organic</b> means the batch is certified, the certificate is valid, the trust score is 80 or more, and the record matches the blockchain. Otherwise it says <b>⚠ Check before buying</b>.</td></tr>
+      <tr><td><b>Trust score dial</b></td><td>0 to 100. Any problems are listed underneath, with the points they cost.</td></tr>
+      <tr><td><b>Product / Organic certificate</b></td><td>Farmer, harvest date, who certified it, the expiry date, and a link to the certificate document.</td></tr>
+      <tr><td><b>Journey</b></td><td>Every step from registration to sale, with the date, the people involved, the place, and a link to the blockchain transaction.</td></tr>
+      <tr><td><b>Blockchain verification</b></td><td>Whether the record still matches the blockchain exactly.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <figure><img src="img/14-trace-warning.png"><figcaption>A warning: this batch was rejected by the certifier, so it scores 40 (suspicious)</figcaption></figure>
+  <div class="box warn"><b>If you see a warning</b><p>Read the reasons under the score. "Batch not found" means the code doesn't exist. Check that you typed it correctly, and be careful if the product claims to be organic.</p></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">04</span>For farmers</h2>
+  <figure><img src="img/04-farmer.png"><figcaption>Farmer dashboard: registration form on the left, your batches on the right</figcaption></figure>
+  <h3>Register a harvest batch</h3>
+  <ol class="steps">
+    <li>Fill in <b>Product</b>, <b>Quantity</b> and <b>Unit</b> (kg, quintal, tonne, litre, dozen or piece), <b>Origin</b> (village or district) and <b>Harvest date</b>. The harvest date can't be in the future.</li>
+    <li>Under <b>Organic certificate</b>, choose the certificate file: PDF, PNG, JPEG or WebP, up to 5 MB.</li>
+    <li>Click <b>Register batch</b>. The button shows "Uploading certificate to IPFS…" and then "Recording on blockchain…". This usually takes 5–30 seconds.</li>
+    <li>A green notice confirms the registration, and the new batch appears under <b>My batches</b> with status <b>Awaiting certification</b>.</li>
+  </ol>
+  <h3>Hand a certified batch to a processor</h3>
+  <ol class="steps">
+    <li>When the certifier has approved the batch, a <b>Transfer →</b> button appears next to it.</li>
+    <li>Choose the receiving processor, type the hand-over location (for example "MIDC Ambad, Nashik"), and click <b>Confirm transfer</b>.</li>
+  </ol>
+  <div class="box tip"><b>Tip</b><p>"Waiting for certifier" means you just need to wait. "Certificate expired: ask the certifier to renew" means the batch can't move until a certifier renews it. Click any batch code to open its full details.</p></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">05</span>For certifiers</h2>
+  <figure><img src="img/05-certifier.png"><figcaption>Certifier dashboard: batches awaiting review, and batches already reviewed</figcaption></figure>
+  <ol class="steps">
+    <li>Under <b>Awaiting review</b>, click <b>Review</b> next to a batch.</li>
+    <li>Click <b>Open farmer's certificate ↗</b> and check the document.</li>
+    <li>Choose <b>Approve as organic</b> and set <b>Certificate valid until</b> (it must be a future date). If you want to replace the farmer's file with your own, choose a <b>Certificate file</b>. Click <b>Approve</b>.</li>
+    <li>Or choose <b>Reject</b>, then <b>Reject batch</b>. A rejected batch can't be transferred, and it scores 40 (suspicious).</li>
+  </ol>
+  <figure><img src="img/06-certify-modal.png"><figcaption>The certification decision window</figcaption></figure>
+  <h3>Changing a decision later</h3>
+  <p>Batches you have reviewed are listed under <b>Reviewed batches</b> until they are sold. The button there says <b>Renew</b> (expired certificate), <b>Revise</b> (still valid) or <b>Re-review</b> (rejected). Use it to extend the expiry date, or reject a batch to <b>revoke</b> its certification, which immediately stops any further transfers. Every decision stays in the batch's certification history.</p>
+</section>
+
+<section class="page">
+  <h2><span class="num">06</span>For processors and distributors</h2>
+  <p>Both dashboards work the same way. <b>In my custody</b> lists the batches you hold now; <b>Passed on / sold</b> lists the ones you have handed on.</p>
+  <figure><img src="img/07-processor.png"><figcaption>Processor dashboard</figcaption></figure>
+  <ol class="steps">
+    <li>Click <b>Transfer →</b> next to a batch.</li>
+    <li>Choose who receives it (a processor sends to a distributor, a distributor to a retailer), and type the hand-over location.</li>
+    <li>Click <b>Confirm transfer</b>. The batch moves to <b>Passed on / sold</b>.</li>
+  </ol>
+  <figure><img src="img/08-transfer-modal.png"><figcaption>The transfer window</figcaption></figure>
+  <p class="small">A greyed-out <b>Transfer</b> button means the certification was revoked or the certificate has expired. Hover over it to see which.</p>
+</section>
+
+<section class="page">
+  <h2><span class="num">07</span>For retailers</h2>
+  <figure><img src="img/09-retailer.png"><figcaption>Retailer dashboard</figcaption></figure>
+  <h3>Print the QR label</h3>
+  <ol class="steps">
+    <li>Click <b>QR label</b> next to a batch you hold.</li>
+    <li>Click <b>Print label</b> to print it (the page prints only the label), or <b>Download SVG</b> to send it to a label printer or designer.</li>
+    <li>Stick the label on the shelf or the packs. Scanning it opens the product page described in section 3.</li>
+  </ol>
+  <figure><img src="img/10-label.png" style="max-height:95mm;object-fit:contain"><figcaption>Shelf label: QR code, product name, batch code, origin and harvest date</figcaption></figure>
+  <h3>Mark a batch as sold</h3>
+  <ol class="steps">
+    <li>Click <b>Mark sold</b>, type the store location, and confirm. This is the final step in the journey.</li>
+  </ol>
+  <figure><img src="img/11-sold-modal.png"><figcaption>The mark-as-sold window</figcaption></figure>
+</section>
+
+<section class="page">
+  <h2><span class="num">08</span>The batch details page</h2>
+  <p>Clicking a batch code anywhere opens its details: the batch facts, the full journey with blockchain links, and the certification history. <b>Public trace page ↗</b> opens what shoppers see. Retailers holding the batch, and administrators, also get <b>Print QR label</b>.</p>
+  <figure><img src="img/12-batch-detail.png"><figcaption>Batch details page</figcaption></figure>
+</section>
+
+<section class="page">
+  <h2><span class="num">09</span>For administrators</h2>
+  <p>The admin panel has five tabs.</p>
+  <h3>Overview</h3>
+  <p>Counts of batches, the average trust score, open fraud alerts and accounts waiting for approval (click <b>Review →</b> to jump to them), plus a 14-day activity chart and batches by stage.</p>
+  <figure><img src="img/15-admin-overview.png"><figcaption>Admin overview</figcaption></figure>
+</section>
+
+<section class="page">
+  <h3>Users</h3>
+  <p>Filter by <b>Pending</b>, <b>Approved</b>, <b>Blocked</b> or <b>All</b>. Click <b>Approve</b> to let someone log in, or <b>Block</b> to stop them; blocking takes effect immediately, even if they are logged in. A blocked account can be approved again later. Check that a person really belongs to the organisation they entered before approving.</p>
+  <figure><img src="img/16-admin-users.png"><figcaption>Users tab with a pending sign-up</figcaption></figure>
+  <h3>Fraud alerts</h3>
+  <p>A list of batches that broke a trust rule (see section 10). An alert closes automatically when the problem is fixed, for example when a certificate is renewed. <b>Dismiss</b> hides an alert after you have looked into it, but it reopens if the rule is still broken.</p>
+  <figure><img src="img/17-admin-alerts.png"><figcaption>Fraud alerts tab</figcaption></figure>
+</section>
+
+<section class="page">
+  <h3>Batches</h3>
+  <p>Every batch on the platform, with a search box for code or product.</p>
+  <figure><img src="img/18-admin-batches.png"><figcaption>All batches</figcaption></figure>
+  <h3>Gas analysis</h3>
+  <p>Compares the blockchain cost of this design with a design that stores everything on-chain. It is mainly useful for project reports.</p>
+  <figure><img src="img/19-admin-gas.png" style="max-height:110mm;object-fit:contain;object-position:top"><figcaption>Gas comparison</figcaption></figure>
+</section>
+
+<section class="page">
+  <h2><span class="num">10</span>How the trust score works</h2>
+  <p>Each batch starts at 100. Every time someone looks it up, the system checks it again, including comparing it with the blockchain, and subtracts points for each problem it finds:</p>
+  <table>
+    <thead><tr><th>Rule</th><th>Problem</th><th>Points</th></tr></thead>
+    <tbody>
+      <tr><td><code>R1</code></td><td>Not certified (yet)</td><td>−40</td></tr>
+      <tr><td><code>R2</code></td><td>The website's record doesn't match the blockchain</td><td>−30</td></tr>
+      <tr><td><code>R3</code></td><td>The certificate has expired</td><td>−25</td></tr>
+      <tr><td><code>R4</code></td><td>More than 3 hand-overs within one hour</td><td>−10 for each extra one, at most −20</td></tr>
+      <tr><td><code>R5</code></td><td>Rejected by the certifier (instead of R1)</td><td>−60</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>Score</th><th>Band</th></tr></thead>
+    <tbody>
+      <tr><td>80–100</td><td><b style="color:#2e5e3e">Verified</b></td></tr>
+      <tr><td>50–79</td><td><b style="color:#a15c07">Caution</b>. For example, a newly registered batch scores 60 until it is certified.</td></tr>
+      <tr><td>0–49</td><td><b style="color:#a83a2a">Suspicious</b></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">11</span>Messages you may see</h2>
+  <table>
+    <thead><tr><th style="width:42%">Message</th><th>What it means and what to do</th></tr></thead>
+    <tbody>
+      <tr><td>"… recorded on the blockchain." (green)</td><td>Done. The short code after it links to the transaction.</td></tr>
+      <tr><td>"… sent; the network has not confirmed it yet." (amber)</td><td>The blockchain is slow. Nothing more to do; it appears by itself, usually within a minute. Don't submit it again.</td></tr>
+      <tr><td>"Batch must be certified before it can be transferred"</td><td>Wait for the certifier.</td></tr>
+      <tr><td>"The organic certificate has expired; a certifier must renew it before transfer"</td><td>Ask the certifier to click <b>Renew</b>.</td></tr>
+      <tr><td>"Only the current holder of this batch can transfer it"</td><td>You no longer hold this batch, or it was already moved.</td></tr>
+      <tr><td>"Recipient must be a processor" (or distributor or retailer)</td><td>Choose someone in the next role.</td></tr>
+      <tr><td>"No approved … accounts yet"</td><td>The next participant hasn't been approved. Ask the administrator.</td></tr>
+      <tr><td>"Only PDF, PNG, JPEG or WebP files are allowed" / "File is larger than 5 MB"</td><td>Convert or compress the file.</td></tr>
+      <tr><td>"Blockchain network is unavailable, please try again shortly"</td><td>Try again in a few minutes. If it continues, tell the administrator.</td></tr>
+      <tr><td>"Too many attempts, please try again later"</td><td>Too many failed logins. Wait 15 minutes.</td></tr>
+      <tr><td>"Session expired or invalid, please log in again"</td><td>Log in again.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</body>
+</html>

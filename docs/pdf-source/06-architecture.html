@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Organic Trace – Architecture and Design</title>
+<link rel="stylesheet" href="doc.css">
+<style>
+  svg.diagram { width: 100%; height: auto; display: block; margin: 2mm 0 5mm; }
+  svg.diagram text { font-family: "IBM Plex Sans", sans-serif; font-size: 11px; fill: #1f2a22; }
+  svg.diagram .t { font-family: "Fraunces", serif; font-weight: 600; font-size: 13px; }
+  svg.diagram .m { font-family: "IBM Plex Mono", monospace; font-size: 9.5px; fill: #5f5e51; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="38" height="38" fill="none" stroke="#2e5e3e"><circle cx="16" cy="16" r="14.5" stroke-width="1.5"/><circle cx="16" cy="16" r="11.5" stroke-width=".75" stroke-dasharray="1.4 1.6"/><path d="M16 23v-8" stroke-width="1.6" stroke-linecap="round"/><path d="M16 16c0-3.6 2.4-6 6-6 0 3.6-2.4 6-6 6Z" fill="#2e5e3e" stroke="none"/><path d="M16 18.5c0-2.8-1.9-4.7-4.7-4.7 0 2.8 1.9 4.7 4.7 4.7Z" fill="#b7791f" stroke="none"/></svg>
+    <div>Organic Trace<small>FARM · LEDGER · SHELF</small></div>
+  </div>
+  <div>
+    <p class="eyebrow">Document 6 of 13</p>
+    <h1>Architecture and Design</h1>
+    <p class="lede">The system's components, how data flows between them, the main design decisions with their reasons, and the technology choices.</p>
+  </div>
+  <div class="meta">
+    <div><b>For</b>Developers, reviewers and examiners</div>
+    <div><b>Version</b>1.0 · 27 November 2026</div>
+    <div><b>Related</b>7 · API · 8 · Database</div>
+  </div>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><span>01</span>Context and goals</li>
+    <li><span>02</span>System architecture diagram</li>
+    <li><span>03</span>Components</li>
+    <li><span>04</span>Smart contract design</li>
+    <li><span>05</span>Data flows</li>
+    <li><span>06</span>Consistency between chain and database</li>
+    <li><span>07</span>Fraud engine</li>
+    <li><span>08</span>Security design</li>
+    <li><span>09</span>Design decisions (ADR summary)</li>
+    <li><span>10</span>Technology choices</li>
+    <li><span>11</span>Deployment view</li>
+    <li><span>12</span>Quality attributes</li>
+  </ol>
+</div>
+
+<section>
+  <h2><span class="num">01</span>Context and goals</h2>
+  <p>Organic Trace lets several organisations that don't fully trust each other (farmers, certifiers, processors, distributors, retailers) share one tamper-evident record of each produce batch. Shoppers check that record by scanning a QR code. The design goals, taken from the PRD:</p>
+  <ul>
+    <li><b>Integrity:</b> the blockchain is the source of truth, and any difference between the database and the chain is detected.</li>
+    <li><b>Usability:</b> participants use an email and password, never a crypto wallet; shoppers need no login.</li>
+    <li><b>Cost:</b> keep on-chain data minimal (identifiers, short fields, certificate CIDs) and measure the saving.</li>
+    <li><b>Reliability:</b> no lost or duplicated records when the network is slow or a process restarts.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">02</span>System architecture diagram</h2>
+  <svg class="diagram" viewBox="0 0 700 420" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f2a22"/></marker></defs>
+    <!-- users -->
+    <rect x="10" y="10" width="150" height="80" fill="#f6ecd9" stroke="#1f2a22"/><text class="t" x="22" y="32">Participants</text><text x="22" y="50">Farmer, Certifier,</text><text x="22" y="64">Processor, Distributor,</text><text x="22" y="78">Retailer, Admin</text>
+    <rect x="10" y="110" width="150" height="50" fill="#f6ecd9" stroke="#1f2a22"/><text class="t" x="22" y="133">Shopper</text><text x="22" y="150">Scans the QR on a phone</text>
+    <!-- proxy + web -->
+    <rect x="200" y="50" width="160" height="80" fill="#fbf8f1" stroke="#1f2a22"/><text class="t" x="212" y="74">Website · Next.js</text><text x="212" y="92">Dashboards (client)</text><text x="212" y="106">Trace page (server-rendered)</text><text class="m" x="212" y="121">:3000 · /api/* forwarded</text>
+    <!-- api -->
+    <rect x="400" y="40" width="170" height="100" fill="#fbf8f1" stroke="#1f2a22"/><text class="t" x="412" y="64">API · Express</text><text x="412" y="82">JWT auth · roles · Zod</text><text x="412" y="96">Relayer (signs transactions)</text><text x="412" y="110">Fraud engine · QR · uploads</text><text class="m" x="412" y="128">:4000 · private network</text>
+    <!-- indexer -->
+    <rect x="400" y="190" width="170" height="64" fill="#fbf8f1" stroke="#1f2a22"/><text class="t" x="412" y="214">Indexer</text><text x="412" y="232">Polls contract events every 5 s</text><text class="m" x="412" y="246">resumes from last block</text>
+    <!-- db -->
+    <rect x="200" y="200" width="160" height="70" fill="#e8eee2" stroke="#1f2a22"/><text class="t" x="212" y="224">PostgreSQL</text><text x="212" y="242">Users, batch cache, events,</text><text x="212" y="256">certificates, alerts</text>
+    <!-- chain -->
+    <rect x="400" y="310" width="170" height="80" fill="#e8eee2" stroke="#2e5e3e" stroke-width="2"/><text class="t" x="412" y="334">Polygon Amoy</text><text x="412" y="352">OrganicTrace.sol</text><text x="412" y="366">Source of truth</text><text class="m" x="412" y="380">AccessControl · events</text>
+    <!-- ipfs -->
+    <rect x="610" y="40" width="85" height="70" fill="#e8eee2" stroke="#1f2a22"/><text class="t" x="620" y="62">IPFS</text><text class="m" x="620" y="80">Pinata:</text><text class="m" x="620" y="93">certificate</text><text class="m" x="620" y="105">files</text>
+    <!-- arrows -->
+    <line x1="160" y1="55" x2="198" y2="75" stroke="#1f2a22" marker-end="url(#a)"/>
+    <line x1="160" y1="135" x2="198" y2="110" stroke="#1f2a22" marker-end="url(#a)"/>
+    <line x1="360" y1="90" x2="398" y2="90" stroke="#1f2a22" marker-end="url(#a)"/><text class="m" x="364" y="84">HTTP</text>
+    <line x1="570" y1="70" x2="608" y2="70" stroke="#1f2a22" marker-end="url(#a)"/><text class="m" x="574" y="64">upload</text>
+    <line x1="430" y1="140" x2="300" y2="198" stroke="#1f2a22" marker-end="url(#a)"/><text class="m" x="330" y="160">SQL</text>
+    <polyline points="570,125 592,125 592,350 572,350" fill="none" stroke="#1f2a22" marker-end="url(#a)"/><text class="m" x="598" y="240">tx +</text><text class="m" x="598" y="252">reads</text>
+    <line x1="470" y1="308" x2="470" y2="256" stroke="#2e5e3e" stroke-dasharray="4 3" marker-end="url(#a)"/><text class="m" x="414" y="290">events</text>
+    <line x1="400" y1="222" x2="362" y2="232" stroke="#1f2a22" marker-end="url(#a)"/>
+  </svg>
+  <p class="small">Solid arrows: requests. Dashed arrow: events read back from the chain. Only the website is reachable from the internet.</p>
+</section>
+
+<section class="page">
+  <h2><span class="num">03</span>Components</h2>
+  <table>
+    <thead><tr><th style="width:20%">Component</th><th style="width:28%">Code</th><th>Responsibility</th></tr></thead>
+    <tbody>
+      <tr><td>Smart contract</td><td><code>contracts/OrganicTrace.sol</code></td><td>Stores batches and transfer history; enforces stage order, certification and roles; emits events.</td></tr>
+      <tr><td>Chain client</td><td><code>backend/src/chain/ethersClient.ts</code></td><td>Signs and queues transactions (NonceManager), sets fees (30 gwei tip floor, 40 cap), waits for receipts, decodes custom errors and events.</td></tr>
+      <tr><td>API routes</td><td><code>backend/src/routes/*</code></td><td>auth, users, upload, batches, trace (public), admin.</td></tr>
+      <tr><td>Event applier</td><td><code>services/events.ts</code></td><td>Applies chain events to the database idempotently and in order.</td></tr>
+      <tr><td>Send-and-apply</td><td><code>services/chainTx.ts</code></td><td>Sends a transaction, applies its events when confirmed, recomputes trust.</td></tr>
+      <tr><td>Indexer</td><td><code>src/indexer.ts</code>, <code>services/indexer.ts</code></td><td>Long-running worker that catches up on events the API didn't apply (timeouts, restarts).</td></tr>
+      <tr><td>Fraud engine</td><td><code>services/fraud.ts</code>, <code>verify.ts</code>, <code>trust.ts</code></td><td>Rules R1–R5, DB-to-chain comparison, trust score, alert syncing, 30-second cache.</td></tr>
+      <tr><td>Presenter</td><td><code>services/presenter.ts</code></td><td>Turns database rows into API responses (no emails), with explorer links.</td></tr>
+      <tr><td>Repositories</td><td><code>repositories/*.ts</code></td><td>Parameterised SQL for users and batches.</td></tr>
+      <tr><td>IPFS client</td><td><code>ipfs/pinata.ts</code></td><td>Uploads files to Pinata and returns the CID; disabled when no key is set.</td></tr>
+      <tr><td>Website</td><td><code>frontend/src/app/*</code></td><td>Landing page, login and sign-up, five role dashboards, batch details, label, admin, public trace page.</td></tr>
+      <tr><td>Database</td><td><code>db/schema.sql</code></td><td>6 tables; see Document 8.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">04</span>Smart contract design</h2>
+  <div class="grid2">
+    <div>
+      <h4>State</h4>
+      <ul>
+        <li><code>mapping(string =&gt; Batch)</code>: batchId, product, origin, harvestDate, farmerId, certificateCID, certExpiry, status, stage, currentOwner, exists</li>
+        <li><code>mapping(string =&gt; Transfer[])</code>: fromActor, toActor, toStage, location, timestamp</li>
+      </ul>
+      <h4>Enums</h4>
+      <p><code>Stage</code>: Farmer, Processor, Distributor, Retailer, Sold<br><code>Status</code>: Registered, Certified, Rejected</p>
+      <h4>Roles</h4>
+      <p><code>DEFAULT_ADMIN_ROLE</code> (deployer), <code>RELAYER_ROLE</code>, <code>CERTIFIER_ROLE</code></p>
+    </div>
+    <div>
+      <h4>Functions</h4>
+      <table>
+        <tbody>
+          <tr><td><code>registerBatch</code></td><td>relayer</td></tr>
+          <tr><td><code>certifyBatch</code></td><td>certifier or relayer</td></tr>
+          <tr><td><code>transferBatch</code></td><td>relayer</td></tr>
+          <tr><td><code>markSold</code></td><td>relayer</td></tr>
+          <tr><td><code>getBatch</code>, <code>getHistory</code>, <code>batchExists</code></td><td>anyone (view)</td></tr>
+        </tbody>
+      </table>
+      <h4>Events</h4>
+      <p><code>BatchRegistered</code>, <code>BatchCertified</code> (includes the CID), <code>BatchTransferred</code>, <code>BatchSold</code></p>
+    </div>
+  </div>
+  <h4>Batch state machine</h4>
+  <svg class="diagram" viewBox="0 0 700 120" xmlns="http://www.w3.org/2000/svg">
+    <defs><marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#1f2a22"/></marker></defs>
+    <g>
+      <rect x="5" y="40" width="100" height="40" fill="#fbf8f1" stroke="#1f2a22"/><text class="t" x="27" y="65">Farmer</text>
+      <rect x="150" y="40" width="110" height="40" fill="#fbf8f1" stroke="#1f2a22"/><text class="t" x="170" y="65">Processor</text>
+      <rect x="305" y="40" width="115" height="40" fill="#fbf8f1" stroke="#1f2a22"/><text class="t" x="322" y="65">Distributor</text>
+      <rect x="465" y="40" width="100" height="40" fill="#fbf8f1" stroke="#1f2a22"/><text class="t" x="487" y="65">Retailer</text>
+      <rect x="605" y="40" width="85" height="40" fill="#e8eee2" stroke="#2e5e3e"/><text class="t" x="630" y="65">Sold</text>
+      <line x1="105" y1="60" x2="148" y2="60" stroke="#1f2a22" marker-end="url(#b)"/>
+      <line x1="260" y1="60" x2="303" y2="60" stroke="#1f2a22" marker-end="url(#b)"/>
+      <line x1="420" y1="60" x2="463" y2="60" stroke="#1f2a22" marker-end="url(#b)"/>
+      <line x1="565" y1="60" x2="603" y2="60" stroke="#1f2a22" marker-end="url(#b)"/>
+      <text class="m" x="108" y="32">transfer*</text><text class="m" x="263" y="32">transfer*</text><text class="m" x="423" y="32">transfer*</text><text class="m" x="566" y="32">markSold</text>
+      <text class="m" x="5" y="105">* only when status = Certified. Status: Registered → Certified | Rejected, changeable by certifyBatch until Sold.</text>
+    </g>
+  </svg>
+</section>
+
+<section class="page">
+  <h2><span class="num">05</span>Data flows</h2>
+  <h3>5.1 Registering a batch</h3>
+  <ol class="steps">
+    <li>Website → <code>POST /api/upload</code> (certificate) → type checked from the file's bytes → Pinata → returns the CID.</li>
+    <li>Website → <code>POST /api/batches</code>. The API validates the input and <b>inserts the database row first</b>, which reserves a unique batch code.</li>
+    <li>The relayer sends <code>registerBatch(code, product, origin, harvestDate, farmerActorId, cid)</code>, and the transaction hash is stored straight away.</li>
+    <li>On confirmation, the <code>BatchRegistered</code> event is applied: <code>last_block</code> is set, a <code>registered</code> event row is added, and the trust score is computed (60 until certified).</li>
+    <li>If the contract rejects the call, the reserved row is deleted and the user gets 4xx. If confirmation times out, the API answers 202 and the indexer completes it.</li>
+  </ol>
+  <h3>5.2 Certifying, transferring, selling</h3>
+  <p>Same pattern: API checks → relayer transaction → contract checks → events applied → trust recomputed. The certifier's on-chain id is passed explicitly (<code>certifierId</code>), so each certification is attributed even though the relayer signs it.</p>
+  <h3>5.3 Public verification</h3>
+  <ol class="steps">
+    <li>The shopper opens <code>/trace/&lt;code&gt;</code>. Next.js renders the page shell at once, and the verification streams in.</li>
+    <li>The server sends <code>GET /api/trace/:code</code> to the API, passing on the visitor's address for rate limiting.</li>
+    <li><code>TrustService.recompute</code> loads the batch and events, compares them with <code>getBatch</code> and <code>getHistory</code> on the chain (2.5-second timeout, 30-second cache), evaluates R1–R5, stores the score, and syncs alerts.</li>
+    <li>The response contains the batch, timeline, certificates, trust result, verification (matches chain, differences) and the contract address.</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="num">06</span>Consistency between chain and database</h2>
+  <ul>
+    <li><b>Two writers, one result:</b> the API (right after confirmation) and the indexer (later) both call <code>applyEvents</code>.</li>
+    <li><b>No duplicates:</b> <code>batch_events</code> is unique on <code>(tx_hash, log_index)</code>; <code>certificates</code> on <code>tx_hash</code>. Inserts use <code>ON CONFLICT DO NOTHING</code>.</li>
+    <li><b>No rollback:</b> batch state is updated only when <code>(block, logIndex)</code> is newer than the stored <code>(last_block, last_log_index)</code>.</li>
+    <li><b>Resumable:</b> <code>indexer_state.last_block</code> is saved after each chunk of up to 1,000 blocks; the indexer stays 2 blocks behind the head to avoid re-organisations.</li>
+    <li><b>Final guard:</b> even if the database is wrong, the contract refuses invalid moves (tested: "a stale database still cannot skip a stage").</li>
+    <li><b>Detection:</b> rule R2 compares the two on every trace look-up.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">07</span>Fraud engine</h2>
+  <p><code>evaluateBatch</code> is a pure function (facts in, score out), which makes it easy to test. <code>TrustService</code> collects the facts (status, expiry, transfer times, chain comparison), stores the score, and keeps <code>fraud_alerts</code> in step: one open alert per batch and rule, closed automatically when the rule clears. R2 alerts stay open if the chain couldn't be checked.</p>
+  <table>
+    <thead><tr><th>Rule</th><th>Condition</th><th>Impact</th><th>Severity</th></tr></thead>
+    <tbody>
+      <tr><td>R1</td><td>status = registered</td><td>−40</td><td>high</td></tr>
+      <tr><td>R2</td><td>database differs from chain (fields, owner or any hand-over)</td><td>−30</td><td>high</td></tr>
+      <tr><td>R3</td><td>certified and expiry &lt; now</td><td>−25</td><td>high</td></tr>
+      <tr><td>R4</td><td>more than 3 transfers in any sliding 60-minute window</td><td>−10 each, max −20</td><td>medium</td></tr>
+      <tr><td>R5</td><td>status = rejected (replaces R1)</td><td>−60</td><td>high</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page">
+  <h2><span class="num">08</span>Security design</h2>
+  <table>
+    <thead><tr><th style="width:26%">Threat</th><th>Control</th></tr></thead>
+    <tbody>
+      <tr><td>Stolen passwords</td><td>bcrypt (10 rounds); same 401 and timing for unknown emails and wrong passwords; failed-login rate limit.</td></tr>
+      <tr><td>Session theft (XSS)</td><td>JWT in an HTTP-only cookie (Secure in production); React escapes output; Helmet headers.</td></tr>
+      <tr><td>CSRF</td><td>SameSite=Lax cookie; CORS limited to the site's own origin; same-origin <code>/api</code> forwarding.</td></tr>
+      <tr><td>Privilege abuse</td><td>Role and holder checks on every route; the user is reloaded on every request (blocking is immediate); admins can't be self-registered.</td></tr>
+      <tr><td>Database tampering</td><td>R2 detection; the contract as final guard.</td></tr>
+      <tr><td>SQL injection</td><td>Parameterised queries only.</td></tr>
+      <tr><td>Malicious uploads</td><td>5 MB limit, file type checked from content, a fixed list of types, uploads limited to two roles.</td></tr>
+      <tr><td>Abuse / scraping</td><td>Per-visitor rate limits; the real visitor address is forwarded; the API isn't exposed.</td></tr>
+      <tr><td>Relayer key compromise</td><td>Key only in the server environment; role can be revoked and moved to a new wallet; every action is public.</td></tr>
+      <tr><td>Misconfiguration</td><td>Configuration validated by Zod at start-up; production refuses a localhost site URL.</td></tr>
+      <tr><td>Data exposure</td><td>Public endpoints never return emails; on-chain ids are hashes, not names.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">09</span>Design decisions (ADR summary)</h2>
+  <table>
+    <thead><tr><th style="width:4%">#</th><th style="width:26%">Decision</th><th>Reason</th><th style="width:26%">Trade-off</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Hybrid storage: ids, short fields and CID on-chain; files on IPFS; details in the database</td><td>53.6% less gas per batch; CID still proves which file was approved</td><td>Depends on IPFS pinning and a database cache</td></tr>
+      <tr><td>2</td><td>Relayer signs for users</td><td>No wallets for farmers and shopkeepers</td><td>Users trust the platform to submit what they asked for</td></tr>
+      <tr><td>3</td><td>Stage order enforced on-chain, with an explicit <code>toStage</code></td><td>Even a compromised backend can't skip stages</td><td>Slightly more calldata</td></tr>
+      <tr><td>4</td><td>Actor ids = keccak256(UUID)</td><td>No personal data on a public chain</td><td>Linking ids to people needs the database</td></tr>
+      <tr><td>5</td><td>Database row inserted before the transaction</td><td>Reserves a unique code; avoids orphan chain records on rejection</td><td>Row deleted if the chain rejects it</td></tr>
+      <tr><td>6</td><td>Idempotent event applier shared by the API and the indexer</td><td>Instant feedback plus guaranteed catch-up</td><td>Ordering guard needed</td></tr>
+      <tr><td>7</td><td>Rule-based fraud engine</td><td>Explainable; no training data</td><td>Fixed rules, not adaptive</td></tr>
+      <tr><td>8</td><td>Non-upgradeable contract</td><td>Rules can't be changed after the fact</td><td>New rules need a new deployment</td></tr>
+      <tr><td>9</td><td>Browser → Next.js → API (forwarded)</td><td>First-party cookie; API stays private</td><td>Extra hop</td></tr>
+      <tr><td>10</td><td>Certificate expiry blocks transfers in the API</td><td>Expired organic status shouldn't move down the chain</td><td>Not yet enforced inside the contract</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page">
+  <h2><span class="num">10</span>Technology choices</h2>
+  <table>
+    <thead><tr><th>Layer</th><th>Choice (version)</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>Blockchain</td><td>Polygon Amoy (PoS, EVM)</td><td>Low fees, Ethereum tooling, free testnet</td></tr>
+      <tr><td>Contract</td><td>Solidity 0.8.24, OpenZeppelin 5.6.1, Hardhat 2.29</td><td>Standard, audited role library; built-in overflow checks; mature testing</td></tr>
+      <tr><td>Chain library</td><td>ethers 6.17</td><td>Typed contract calls, error decoding, NonceManager</td></tr>
+      <tr><td>API</td><td>Node.js, Express 5.3, Zod 4</td><td>Async error handling in Express 5; schema validation</td></tr>
+      <tr><td>Auth</td><td>jsonwebtoken (HS256), bcryptjs</td><td>Stateless sessions; safe password hashing</td></tr>
+      <tr><td>Database</td><td>PostgreSQL (Supabase), node-postgres</td><td>Relational integrity, managed backups</td></tr>
+      <tr><td>Files</td><td>IPFS via Pinata</td><td>Content addressing; free tier</td></tr>
+      <tr><td>Website</td><td>Next.js 16.4, React 19.3, Tailwind CSS 4, Recharts</td><td>Server rendering for the trace page; fast styling; charts</td></tr>
+      <tr><td>Tests</td><td>Hardhat/Chai, Vitest, Supertest, pg-mem</td><td>Real chain plus an in-memory Postgres with the real schema</td></tr>
+      <tr><td>Deployment</td><td>Docker Compose, Coolify</td><td>Reproducible; HTTPS handled by the proxy</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">11</span>Deployment view</h2>
+  <p>Three containers from two images: <code>web</code> (the only published port, 3000), <code>api</code> (internal port 4000, with a health check on <code>/api/health</code>) and <code>indexer</code> (same image as <code>api</code>, different command). External services: Supabase PostgreSQL, Pinata, and a Polygon RPC. HTTPS is handled by the reverse proxy. See Document 2.</p>
+</section>
+
+<section>
+  <h2><span class="num">12</span>Quality attributes</h2>
+  <table>
+    <thead><tr><th>Attribute</th><th>How it is met</th></tr></thead>
+    <tbody>
+      <tr><td>Performance</td><td>Trace reads come from the database; the chain comparison is cached for 30 s and capped at 2.5 s; the page shell renders first and the result streams in.</td></tr>
+      <tr><td>Reliability</td><td>The 202 path for slow transactions; the resumable, idempotent indexer; queued nonces.</td></tr>
+      <tr><td>Integrity</td><td>On-chain rules; R2 detection.</td></tr>
+      <tr><td>Usability</td><td>No wallets; mobile-responsive; plain error messages.</td></tr>
+      <tr><td>Maintainability</td><td>Typed TypeScript everywhere; 83 automated tests; validated configuration; README and this documentation set.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</body>
+</html>

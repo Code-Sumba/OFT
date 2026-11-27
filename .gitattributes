@@ -1,0 +1,10 @@
+# Text files are stored with LF endings (Dockerfiles and scripts must run on Linux servers)
+* text=auto eol=lf
+
+# Binary files: never convert line endings
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary

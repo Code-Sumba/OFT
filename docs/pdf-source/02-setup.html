@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Organic Trace – Setup and Deployment Guide</title>
+<link rel="stylesheet" href="doc.css">
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="38" height="38" fill="none" stroke="#2e5e3e"><circle cx="16" cy="16" r="14.5" stroke-width="1.5"/><circle cx="16" cy="16" r="11.5" stroke-width=".75" stroke-dasharray="1.4 1.6"/><path d="M16 23v-8" stroke-width="1.6" stroke-linecap="round"/><path d="M16 16c0-3.6 2.4-6 6-6 0 3.6-2.4 6-6 6Z" fill="#2e5e3e" stroke="none"/><path d="M16 18.5c0-2.8-1.9-4.7-4.7-4.7 0 2.8 1.9 4.7 4.7 4.7Z" fill="#b7791f" stroke="none"/></svg>
+    <div>Organic Trace<small>FARM · LEDGER · SHELF</small></div>
+  </div>
+  <div>
+    <p class="eyebrow">Document 2 of 13</p>
+    <h1>Setup and Deployment Guide</h1>
+    <p class="lede">Connecting Organic Trace to the Polygon blockchain, a cloud database and IPFS file storage, then putting it online on your own domain.</p>
+  </div>
+  <div class="meta">
+    <div><b>For</b>Whoever deploys and runs the live system</div>
+    <div><b>Version</b>1.0 · 27 November 2026</div>
+    <div><b>Read first</b>1 · Installation Guide</div>
+  </div>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><span>01</span>How the live system fits together</li>
+    <li><span>02</span>Accounts and services you need</li>
+    <li><span>03</span>Step 1 – Database (Supabase)</li>
+    <li><span>04</span>Step 2 – File storage (Pinata IPFS)</li>
+    <li><span>05</span>Step 3 – Wallets and test POL</li>
+    <li><span>06</span>Step 4 – Deploy the smart contract</li>
+    <li><span>07</span>Step 5 – Configure the API</li>
+    <li><span>08</span>Step 6 – Create the tables and the admin</li>
+    <li><span>09</span>Step 7 – Put it online</li>
+    <li><span>10</span>Go-live checklist</li>
+    <li><span>11</span>Running it day to day</li>
+    <li><span>12</span>Moving to Polygon mainnet</li>
+    <li><span>13</span>Troubleshooting</li>
+  </ol>
+</div>
+
+<section>
+  <h2><span class="num">01</span>How the live system fits together</h2>
+  <div class="flow">
+    <div><b>Visitor</b>Browser or phone</div><i>→</i>
+    <div><b>HTTPS proxy</b>Coolify, nginx or Caddy</div><i>→</i>
+    <div><b>Website</b>Next.js :3000, the only public service</div><i>→</i>
+    <div><b>API</b>Express :4000, private network only</div>
+  </div>
+  <div class="flow">
+    <div><b>Supabase</b>PostgreSQL: users, batches, alerts</div><i>↔</i>
+    <div><b>API + Indexer</b>Same code, two processes</div><i>↔</i>
+    <div><b>Polygon Amoy</b>Smart contract: the permanent record</div><i>↔</i>
+    <div><b>Pinata IPFS</b>Certificate files</div>
+  </div>
+  <ul>
+    <li><b>Participants have no crypto wallets.</b> They log in with an email and password. The API checks what each person may do, then signs and sends the blockchain transaction with one platform wallet, called the <b>relayer</b>. The relayer pays all transaction fees.</li>
+    <li><b>The indexer</b> reads contract events from the blockchain every few seconds and writes them into the database. If the network is slow, it finishes the work later and picks up where it left off after a restart.</li>
+    <li><b>The browser only talks to the website.</b> The website forwards <code>/api/*</code> calls to the API, so the API never needs to be reachable from the internet.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">02</span>Accounts and services you need</h2>
+  <table>
+    <thead><tr><th>Service</th><th>What for</th><th>Cost</th></tr></thead>
+    <tbody>
+      <tr><td>Supabase</td><td>PostgreSQL database</td><td>Use a paid plan for a live system. Free projects are paused when idle and later deleted.</td></tr>
+      <tr><td>Pinata</td><td>Storing certificate files on IPFS</td><td>The free tier is enough for a pilot.</td></tr>
+      <tr><td>MetaMask (or any wallet)</td><td>Creating the deployer and relayer wallets</td><td>Free</td></tr>
+      <tr><td>Polygon Amoy faucet</td><td>Free test POL for transaction fees</td><td>Free, with a daily limit</td></tr>
+      <tr><td>Polygonscan / Etherscan API key</td><td>Publishing the contract source on the block explorer (optional)</td><td>Free</td></tr>
+      <tr><td>A server</td><td>Running the website, API and indexer (2 vCPU, 4 GB RAM is plenty)</td><td>Any VPS or Coolify host</td></tr>
+      <tr><td>A domain name</td><td>The public address printed in every QR code</td><td>Yearly fee</td></tr>
+    </tbody>
+  </table>
+  <div class="box warn"><b>Choose the domain before printing labels</b><p>Every QR code contains the full web address, for example <code>https://trace.example.com/trace/OT-2026-7KQ3MZ</code>. If the domain changes later, labels that are already printed stop working.</p></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">03</span>Step 1 – Database (Supabase)</h2>
+  <ol class="steps">
+    <li>Create a project at <code>supabase.com</code>. Choose a region close to your users (for India: Mumbai, <code>ap-south-1</code>), and save the database password somewhere safe.</li>
+    <li>Open <b>Project Settings → Database → Connection string</b> and copy the <b>Session pooler</b> string. It looks like this:<br><code>postgresql://postgres.abcdefgh:PASSWORD@aws-0-ap-south-1.pooler.supabase.com:5432/postgres</code></li>
+    <li>Put it in <code>backend/.env</code> as <code>DATABASE_URL</code>. The API connects over TLS automatically for any host other than localhost.</li>
+    <li>Turn on daily backups (included in the paid plan).</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="num">04</span>Step 2 – File storage (Pinata IPFS)</h2>
+  <ol class="steps">
+    <li>Create an account at <code>pinata.cloud</code>.</li>
+    <li>Open <b>API Keys → New Key</b>, give it permission to upload files, and copy the <b>JWT</b>. Pinata shows it only once.</li>
+    <li>Set <code>PINATA_JWT=&lt;the JWT&gt;</code> in <code>backend/.env</code>. Leave <code>IPFS_GATEWAY_URL=https://gateway.pinata.cloud/ipfs</code>, or set your own dedicated Pinata gateway.</li>
+  </ol>
+  <p>Uploaded certificates are public: anyone with the link can open them. Only the file's fingerprint (its CID) is stored on the blockchain. Accepted files: PDF, PNG, JPEG or WebP, up to 5 MB. The API checks each file's real type from its content, not from its name.</p>
+</section>
+
+<section>
+  <h2><span class="num">05</span>Step 3 – Wallets and test POL</h2>
+  <p>You need two wallets. You can use one for both, but separate wallets are safer:</p>
+  <table>
+    <thead><tr><th>Wallet</th><th>Role</th><th>Needs funds?</th></tr></thead>
+    <tbody>
+      <tr><td><b>Deployer</b></td><td>Deploys the contract and becomes its administrator (it can grant roles).</td><td>Only for the deployment, about 0.06 POL</td></tr>
+      <tr><td><b>Relayer</b></td><td>Signs every transaction the API sends. Its private key lives on the server.</td><td>Yes, continuously; see below</td></tr>
+      <tr><td>Certifier (optional)</td><td>Given <code>CERTIFIER_ROLE</code> at deployment, so a certifier could also certify directly with their own wallet.</td><td>Only if used directly</td></tr>
+    </tbody>
+  </table>
+  <ol class="steps">
+    <li>In MetaMask, add the <b>Polygon Amoy</b> network: chain ID <code>80002</code>, RPC <code>https://polygon-amoy-bor-rpc.publicnode.com</code>, currency <code>POL</code>, explorer <code>https://amoy.polygonscan.com</code>.</li>
+    <li>Create the two accounts. Export each private key (<b>Account details → Show private key</b>) and keep it secret.</li>
+    <li>Request test POL for both from the Polygon faucet (<code>faucet.polygon.technology</code>), choosing the Amoy network.</li>
+  </ol>
+  <h3>How much POL the relayer needs</h3>
+  <p>From the project's gas report, at a 30 gwei fee:</p>
+  <table>
+    <thead><tr><th>Action</th><th>Gas</th><th>Approx. POL</th></tr></thead>
+    <tbody>
+      <tr><td>Register a batch</td><td>304,566</td><td>0.009</td></tr>
+      <tr><td>Certify</td><td>66,345</td><td>0.002</td></tr>
+      <tr><td>Transfer (happens 3 times)</td><td>196,120 each</td><td>0.006 each</td></tr>
+      <tr><td>Mark sold</td><td>180,179</td><td>0.005</td></tr>
+      <tr><td><b>Full life of one batch</b></td><td><b>1,139,450</b></td><td><b>0.034</b></td></tr>
+    </tbody>
+  </table>
+  <div class="box danger"><b>Keep the relayer funded</b><p>If the relayer runs out of POL, every registration, certification and transfer fails with "Blockchain network is unavailable". Keep at least <b>0.5 POL</b> on it (enough for about 15 complete batches) and check the balance on <code>amoy.polygonscan.com</code> every week.</p></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">06</span>Step 4 – Deploy the smart contract</h2>
+  <div class="box tip"><b>Already deployed?</b><p>A contract is already live on Amoy at <code>0x270C6563771e17B652770211D13CCD47D7C8D41b</code> (deploy block <code>49793127</code>, relayer <code>0x4650…6Ae6</code>). You can keep using it if you still control that relayer wallet. In that case skip to step 5, and see the note on <code>DEPLOY_BLOCK</code> there.</p></div>
+  <p>For a fresh deployment, fill in the <b>root</b> <code>.env</code> (used only by Hardhat):</p>
+<pre>RPC_URL=https://polygon-amoy-bor-rpc.publicnode.com
+DEPLOYER_PRIVATE_KEY=0x…        <span class="c"># deployer wallet</span>
+RELAYER_ADDRESS=0x…             <span class="c"># relayer wallet ADDRESS (not its key)</span>
+CERTIFIER_ADDRESS=0x…           <span class="c"># optional</span>
+POLYGONSCAN_API_KEY=…           <span class="c"># optional, to publish the source code</span></pre>
+  <p>Then run:</p>
+<pre>npm run compile
+npm run deploy:amoy</pre>
+  <p>The script deploys the contract, grants <code>RELAYER_ROLE</code> (and <code>CERTIFIER_ROLE</code> if set), saves the result in <code>deployments/amoy.json</code>, and publishes the source on the explorer. Write down two values from that file:</p>
+  <ul>
+    <li><code>address</code> → <code>CONTRACT_ADDRESS</code></li>
+    <li><code>deployBlock</code> → <code>DEPLOY_BLOCK</code></li>
+  </ul>
+  <p class="small">If the public RPC is down, use the backup <code>https://polygon-amoy.drpc.org</code> as <code>RPC_URL</code>.</p>
+</section>
+
+<section>
+  <h2><span class="num">07</span>Step 5 – Configure the API</h2>
+  <p>Create <code>backend/.env</code> from <code>.env.example</code>. Every setting:</p>
+  <table>
+    <thead><tr><th style="width:30%">Variable</th><th style="width:28%">Live value</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>NODE_ENV</code></td><td><code>production</code></td><td>Marks login cookies as secure and checks the site URL.</td></tr>
+      <tr><td><code>PORT</code></td><td><code>4000</code></td><td>API port (internal).</td></tr>
+      <tr><td><code>DATABASE_URL</code></td><td>Supabase session pooler string</td><td>Step 1.</td></tr>
+      <tr><td><code>JWT_SECRET</code></td><td>48+ random bytes as hex</td><td>Signs login sessions. Changing it logs everyone out.</td></tr>
+      <tr><td><code>JWT_EXPIRES_IN_SECONDS</code></td><td><code>7200</code></td><td>Session length (2 hours).</td></tr>
+      <tr><td><code>NEXT_PUBLIC_SITE_URL</code></td><td><code>https://your-domain</code></td><td>Printed in every QR code and used to decide which website may call the API. The API <b>refuses to start</b> in production if this is still localhost.</td></tr>
+      <tr><td><code>TRUST_PROXY</code></td><td><code>1</code></td><td>How many proxies sit in front of the API, so rate limits see each visitor's real address.</td></tr>
+      <tr><td><code>TRACE_RATE_LIMIT_PER_MIN</code></td><td><code>120</code></td><td>Public trace look-ups per visitor per minute.</td></tr>
+      <tr><td><code>LOGIN_RATE_LIMIT</code></td><td><code>20</code></td><td>Failed logins per visitor per 15 minutes. Successful logins don't count.</td></tr>
+      <tr><td><code>REGISTER_RATE_LIMIT</code></td><td><code>10</code></td><td>Sign-ups per visitor per hour.</td></tr>
+      <tr><td><code>RPC_URL</code></td><td>Amoy RPC address</td><td>Blockchain node the API uses.</td></tr>
+      <tr><td><code>RELAYER_PRIVATE_KEY</code></td><td>Relayer key</td><td>Step 3. Keep it secret.</td></tr>
+      <tr><td><code>CONTRACT_ADDRESS</code></td><td>From step 4</td><td></td></tr>
+      <tr><td><code>DEPLOY_BLOCK</code></td><td>See the note below</td><td>Block where the indexer starts.</td></tr>
+      <tr><td><code>MIN_PRIORITY_FEE_GWEI</code> / <code>MAX_PRIORITY_FEE_GWEI</code></td><td><code>30</code> / <code>40</code></td><td>Amoy rejects tips below 25 gwei.</td></tr>
+      <tr><td><code>TX_TIMEOUT_MS</code></td><td><code>90000</code></td><td>How long the API waits for confirmation before answering "sent, still confirming".</td></tr>
+      <tr><td><code>EXPLORER_URL</code></td><td><code>https://amoy.polygonscan.com</code></td><td>Used for transaction links.</td></tr>
+      <tr><td><code>INDEXER_POLL_MS</code> / <code>INDEXER_CONFIRMATIONS</code> / <code>INDEXER_BLOCK_CHUNK</code></td><td><code>5000</code> / <code>2</code> / <code>1000</code></td><td>How often the indexer checks, how many blocks it waits, and how many blocks it reads at once.</td></tr>
+      <tr><td><code>PINATA_JWT</code> / <code>IPFS_GATEWAY_URL</code></td><td>From step 2</td><td></td></tr>
+      <tr><td><code>ADMIN_EMAIL</code> / <code>ADMIN_PASSWORD</code></td><td>Real admin</td><td>Used once by the seed command.</td></tr>
+      <tr><td><code>DEMO_PASSWORD</code></td><td><b>Leave empty</b> on a live system</td><td>If set, the seed command creates demo accounts.</td></tr>
+    </tbody>
+  </table>
+  <div class="box warn"><b>DEPLOY_BLOCK with a new, empty database</b><p>The indexer starts at <code>DEPLOY_BLOCK</code>. If you reuse an old contract with a fresh database, set it to the <b>current</b> block number (shown at the top of <code>amoy.polygonscan.com</code>). Otherwise the indexer first scans millions of old blocks, which takes a long time.</p></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">08</span>Step 6 – Create the tables and the admin</h2>
+<pre>cd backend
+npm run db:migrate   <span class="c"># creates the tables (safe to run again)</span>
+npm run db:seed      <span class="c"># creates the admin from ADMIN_EMAIL / ADMIN_PASSWORD</span></pre>
+  <p>If you deploy with Docker (next step), run these inside the container instead, as shown there.</p>
+</section>
+
+<section>
+  <h2><span class="num">09</span>Step 7 – Put it online</h2>
+  <h3>Option A – Docker Compose (recommended)</h3>
+  <p>The project includes <code>docker-compose.yml</code>, which runs three containers: <code>web</code> (the website), <code>api</code> and <code>indexer</code>. Only <code>web</code> is exposed.</p>
+<pre><span class="c"># on the server, in the project folder, with backend/.env filled in</span>
+docker compose up -d --build
+docker compose run --rm api node dist/scripts/migrate.js
+docker compose run --rm api node dist/scripts/seed.js
+docker compose ps          <span class="c"># all three should be "running"; api should be "healthy"</span></pre>
+  <p>Then point your HTTPS proxy at port <code>3000</code>.</p>
+  <ul>
+    <li><b>Coolify:</b> create a "Docker Compose" resource from the repository, add the <code>backend/.env</code> values as environment variables, and give the <code>web</code> service your domain. Coolify handles HTTPS certificates.</li>
+    <li><b>nginx or Caddy:</b> proxy <code>https://your-domain</code> to <code>http://127.0.0.1:3000</code> and forward the <code>X-Forwarded-For</code> header.</li>
+  </ul>
+  <h3>Option B – Without Docker</h3>
+<pre>cd backend  &amp;&amp; npm ci &amp;&amp; npm run build
+cd ../frontend &amp;&amp; npm ci &amp;&amp; API_URL=http://127.0.0.1:4000 npm run build
+
+<span class="c"># keep these three running with a process manager (pm2, systemd or similar)</span>
+cd backend  &amp;&amp; NODE_ENV=production node dist/src/server.js
+cd backend  &amp;&amp; NODE_ENV=production node dist/src/indexer.js
+cd frontend &amp;&amp; API_URL=http://127.0.0.1:4000 npm start</pre>
+  <div class="box danger"><b>Do not expose port 4000</b><p>Only the website should reach the API. If port 4000 were public, visitors could forge their address and get around the rate limits. Block it in the server firewall.</p></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">10</span>Go-live checklist</h2>
+  <table>
+    <thead><tr><th style="width:8%">✓</th><th>Check</th></tr></thead>
+    <tbody>
+      <tr><td>☐</td><td>Supabase is on a paid plan, with backups on</td></tr>
+      <tr><td>☐</td><td>Relayer holds at least 0.5 POL, and <code>RELAYER_ROLE</code> is granted to it</td></tr>
+      <tr><td>☐</td><td><code>NODE_ENV=production</code> and <code>NEXT_PUBLIC_SITE_URL=https://your-domain</code></td></tr>
+      <tr><td>☐</td><td><code>DEPLOY_BLOCK</code> set correctly for the database</td></tr>
+      <tr><td>☐</td><td><code>JWT_SECRET</code> is new and random, and <code>DEMO_PASSWORD</code> is empty</td></tr>
+      <tr><td>☐</td><td>Admin password is strong, and nobody else knows it</td></tr>
+      <tr><td>☐</td><td>HTTPS works, and port 4000 is not reachable from outside</td></tr>
+      <tr><td>☐</td><td><code>https://your-domain/api/health</code> returns <code>{"success":true,"data":{"status":"ok"}}</code></td></tr>
+      <tr><td>☐</td><td>Full test: register → certify (with a real file) → 3 transfers → QR label → mark sold</td></tr>
+      <tr><td>☐</td><td>Printed QR label scanned with a phone opens the trace page showing <b>✓ Verified organic</b></td></tr>
+      <tr><td>☐</td><td>The indexer log shows "Indexed N event(s)"</td></tr>
+      <tr><td>☐</td><td><code>.env</code> files are not in Git and not shared</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">11</span>Running it day to day</h2>
+  <h3>Health and logs</h3>
+  <ul>
+    <li><code>GET /api/health</code> returns <code>ok</code> while the API is running.</li>
+    <li>API logs show chain errors ("Chain error: …") and upload failures. Indexer logs show "Indexed N event(s)", or "Indexer tick failed (will retry)" when the network has a problem.</li>
+    <li>With Docker: <code>docker compose logs -f api indexer</code>.</li>
+  </ul>
+  <h3>Weekly</h3>
+  <ul>
+    <li>Check the relayer balance and top it up.</li>
+    <li>In the admin panel, review new <b>Users</b> and open <b>Fraud alerts</b>.</li>
+  </ul>
+  <h3>Changing a password</h3>
+  <p>There is no "forgot password" screen yet. To set a new password for any account, create a hash on a machine that has the project, then update the database (for example in Supabase's SQL editor):</p>
+<pre>cd backend
+node -e "console.log(require('bcryptjs').hashSync('NewStrongPassword', 10))"</pre>
+<pre>UPDATE users SET password_hash = '&lt;the hash&gt;' WHERE email = 'person@example.com';</pre>
+  <h3>Updating the software</h3>
+<pre>git pull
+docker compose up -d --build
+docker compose run --rm api node dist/scripts/migrate.js   <span class="c"># safe to run every time</span></pre>
+</section>
+
+<section>
+  <h2><span class="num">12</span>Moving to Polygon mainnet</h2>
+  <p>Amoy is a test network: its POL has no value, and the network can be reset. For a commercial launch:</p>
+  <ol class="steps">
+    <li>Add a <code>polygon</code> network (chain ID <code>137</code>) to <code>hardhat.config.ts</code>, next to <code>amoy</code>.</li>
+    <li>Create new deployer and relayer wallets that have never been used on testnets, and buy real POL for them.</li>
+    <li>Deploy with <code>npx hardhat run scripts/deploy.ts --network polygon</code>.</li>
+    <li>Update <code>RPC_URL</code> (a paid RPC provider is recommended), <code>CONTRACT_ADDRESS</code>, <code>DEPLOY_BLOCK</code> and <code>EXPLORER_URL=https://polygonscan.com</code>.</li>
+    <li>Start with an empty database. Amoy records cannot be moved to mainnet.</li>
+    <li>Change the footer text "Testnet prototype · Polygon Amoy" on the home page.</li>
+  </ol>
+</section>
+
+<section class="page">
+  <h2><span class="num">13</span>Troubleshooting</h2>
+  <table>
+    <thead><tr><th style="width:38%">Message or symptom</th><th>Cause and fix</th></tr></thead>
+    <tbody>
+      <tr><td>"Blockchain network is unavailable, please try again shortly"</td><td>The RPC is down, or the relayer is out of POL. Check the balance, then try the backup RPC.</td></tr>
+      <tr><td>"The relayer wallet is not authorised on the contract"</td><td><code>RELAYER_PRIVATE_KEY</code> doesn't belong to the address that was given <code>RELAYER_ROLE</code>.</td></tr>
+      <tr><td>"Transaction sent; it will appear once the network confirms it."</td><td>Normal when the network is slow. The indexer records it when it confirms, usually within a minute.</td></tr>
+      <tr><td>A batch stays "(confirming…)" for a long time</td><td>The indexer isn't running, or it is still catching up from an old <code>DEPLOY_BLOCK</code>.</td></tr>
+      <tr><td>The API stops with "NEXT_PUBLIC_SITE_URL must be the public site URL in production"</td><td>Set it to <code>https://your-domain</code>.</td></tr>
+      <tr><td>Logging in works, but you are logged straight out again</td><td>The site is served over plain HTTP. Production cookies need HTTPS.</td></tr>
+      <tr><td>"Too many requests, please slow down" for many users at once</td><td>Rate limits are seeing the proxy's address. Make sure the proxy sends <code>X-Forwarded-For</code> and <code>TRUST_PROXY=1</code>.</td></tr>
+      <tr><td>"File uploads are not configured on this server"</td><td><code>PINATA_JWT</code> is empty.</td></tr>
+      <tr><td>"File upload to IPFS failed"</td><td>The Pinata key is invalid, lacks upload permission, or the plan's limit has been reached.</td></tr>
+      <tr><td><code>tenant/user … not found</code> when connecting to the database</td><td>The Supabase project was paused or deleted. Restore it, or create a new one.</td></tr>
+      <tr><td>The trace page says "Records do not match blockchain"</td><td>The database and the chain disagree. Someone may have edited the database, or the database was restored from an old backup. Investigate before trusting that batch.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</body>
+</html>

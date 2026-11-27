@@ -1,0 +1,155 @@
+@import "tailwindcss";
+
+/*
+ * Visual language: a produce label and a ledger book.
+ * Warm paper, ink, field green, a turmeric accent; hairline rules instead of shadows;
+ * near-square corners; serif headings; batch codes set in mono like sticker codes.
+ */
+:root {
+  --background: #f3eee3;
+  --surface: #fbf8f1;
+  --foreground: #1f2a22;
+  --muted: #6b6a5c;
+  --border: #ddd4c2;
+  --rule: #c9bea8;
+  --brand: #2e5e3e;
+  --brand-strong: #1f4430;
+  --brand-soft: #e3e9dc;
+  --on-brand: #fbf8f1;
+  --accent: #b7791f;
+  --accent-soft: #f4e6cc;
+  --warn: #a15c07;
+  --warn-soft: #f6e7cf;
+  --danger: #a83a2a;
+  --danger-soft: #f5ded8;
+  /* Chart categorical slots (validated: dataviz validate_palette.js, fixed order) */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --grid: #e1dccd;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #14130f;
+    --surface: #1c1b16;
+    --foreground: #ece6d6;
+    --muted: #a39d8a;
+    --border: #34312a;
+    --rule: #4a463b;
+    --brand: #86b88f;
+    --brand-strong: #a8d3ae;
+    --brand-soft: #22301f;
+    --on-brand: #14130f;
+    --accent: #d9a24a;
+    --accent-soft: #3a2d17;
+    --warn: #e0a14a;
+    --warn-soft: #33260f;
+    --danger: #e57a68;
+    --danger-soft: #3a1c17;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --series-4: #c98500;
+    --grid: #2f2d27;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-rule: var(--rule);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-on-brand: var(--on-brand);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+  --font-display: var(--font-fraunces);
+}
+
+/* Near-square corners everywhere (labels and ledgers are not pill-shaped) */
+@theme {
+  --radius-md: 0.1875rem;
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.3125rem;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 50;
+  letter-spacing: -0.01em;
+}
+
+h1 {
+  font-weight: 600;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* Small uppercase label used above sections, like the field names on a certificate */
+.eyebrow {
+  font-family: var(--font-plex-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Batch codes: printed sticker code */
+.code-tag {
+  font-family: var(--font-plex-mono);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+/* Rubber stamp for the verification verdict */
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 2px solid currentColor;
+  outline: 1px solid currentColor;
+  outline-offset: 3px;
+  padding: 0.35rem 0.8rem;
+  font-family: var(--font-plex-mono);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transform: rotate(-2deg);
+}
+
+/* Ruled-paper background for the hero label */
+.ruled {
+  background-image: repeating-linear-gradient(to bottom, transparent 0 27px, var(--border) 27px 28px);
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}

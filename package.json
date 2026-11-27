@@ -1,0 +1,27 @@
+{
+  "name": "organic-trace",
+  "version": "1.0.0",
+  "scripts": {
+    "compile": "hardhat compile && hardhat run scripts/export-abi.ts",
+    "test": "hardhat test",
+    "test:gas": "REPORT_GAS=true hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.ts",
+    "deploy:amoy": "hardhat run scripts/deploy.ts --network amoy",
+    "export-abi": "hardhat run scripts/export-abi.ts",
+    "node": "hardhat node",
+    "deploy:localhost": "hardhat run scripts/deploy.ts --network localhost"
+  },
+  "type": "commonjs",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "5.0.0",
+    "@types/node": "26.6.4",
+    "dotenv": "18.0.7",
+    "hardhat": "2.29.1",
+    "ts-node": "10.9.2",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "5.6.1"
+  },
+  "private": true
+}

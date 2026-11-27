@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Organic Trace – FAQ and Troubleshooting</title>
+<link rel="stylesheet" href="doc.css">
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="38" height="38" fill="none" stroke="#2e5e3e"><circle cx="16" cy="16" r="14.5" stroke-width="1.5"/><circle cx="16" cy="16" r="11.5" stroke-width=".75" stroke-dasharray="1.4 1.6"/><path d="M16 23v-8" stroke-width="1.6" stroke-linecap="round"/><path d="M16 16c0-3.6 2.4-6 6-6 0 3.6-2.4 6-6 6Z" fill="#2e5e3e" stroke="none"/><path d="M16 18.5c0-2.8-1.9-4.7-4.7-4.7 0 2.8 1.9 4.7 4.7 4.7Z" fill="#b7791f" stroke="none"/></svg>
+    <div>Organic Trace<small>FARM · LEDGER · SHELF</small></div>
+  </div>
+  <div>
+    <p class="eyebrow">Document 4 of 13</p>
+    <h1>Questions and Answers</h1>
+    <p class="lede">Plain answers to the questions shoppers, supply-chain participants, administrators and the business ask about Organic Trace, followed by fixes for common problems.</p>
+  </div>
+  <div class="meta">
+    <div><b>For</b>Client, users and support staff</div>
+    <div><b>Version</b>1.0 · 27 November 2026</div>
+    <div><b>Related</b>3 · Website User Guide</div>
+  </div>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><span>01</span>About Organic Trace</li>
+    <li><span>02</span>For shoppers</li>
+    <li><span>03</span>For farmers and certifiers</li>
+    <li><span>04</span>For processors, distributors and retailers</li>
+    <li><span>05</span>Accounts and administration</li>
+    <li><span>06</span>Blockchain, security and privacy</li>
+    <li><span>07</span>Costs, limits and the future</li>
+    <li><span>08</span>Troubleshooting</li>
+  </ol>
+</div>
+
+<section>
+  <h2><span class="num">01</span>About Organic Trace</h2>
+  <div class="qa"><div class="q">What is Organic Trace?</div><div class="a"><p>A website that records organic produce from the farm to the shop shelf. Every step (registration, certification, each hand-over and the sale) is saved on the Polygon blockchain. A shopper scans the QR code on the pack and sees the whole journey, the organic certificate and a trust score.</p></div></div>
+  <div class="qa"><div class="q">What problem does it solve?</div><div class="a"><p>Organic labels are easy to fake, and the paperwork behind them is scattered across farms, certifiers and traders. Shoppers can't check a claim, and honest farmers lose out to fake "organic" goods. Organic Trace gives every batch one shared record that nobody can quietly change, and that anyone can check in seconds.</p></div></div>
+  <div class="qa"><div class="q">Who uses it?</div><div class="a"><p>Farmers, organic certifiers, processors, distributors and retailers each have an account and a dashboard. Shoppers use it without an account. An administrator approves accounts and watches for suspicious batches.</p></div></div>
+  <div class="qa"><div class="q">What is a "batch"?</div><div class="a"><p>One harvest of one product from one farmer, for example 250 kg of basmati rice harvested on 1 November. It gets a code like <code>OT-2026-7KQ3MZ</code>. The code avoids the characters 0, O, 1, I and L, so it can't be misread on a label.</p></div></div>
+  <div class="qa"><div class="q">Does anyone need to install an app?</div><div class="a"><p>No. Everything works in a normal web browser on a phone or a computer.</p></div></div>
+</section>
+
+<section>
+  <h2><span class="num">02</span>For shoppers</h2>
+  <div class="qa"><div class="q">How do I check a product?</div><div class="a"><p>Scan the QR code on the pack with your phone camera. Or open the home page, type the code printed under the QR, and press <b>Verify</b>. No account is needed.</p></div></div>
+  <div class="qa"><div class="q">What does "✓ Verified organic" mean?</div><div class="a"><p>All four of these are true: a certifier approved the batch, the certificate hasn't expired, the trust score is 80 or more, and the record matches the blockchain exactly.</p></div></div>
+  <div class="qa"><div class="q">What does "⚠ Check before buying" mean?</div><div class="a"><p>At least one check failed. The reasons are listed under the score, for example "Certificate expired" or "Rejected by certifier". It doesn't always mean fraud, but you should be careful.</p></div></div>
+  <div class="qa"><div class="q">What is the trust score?</div><div class="a"><p>A number from 0 to 100. Each batch starts at 100 and loses points for problems: not certified −40, record doesn't match the blockchain −30, certificate expired −25, too many hand-overs in one hour up to −20, rejected −60. 80+ is verified, 50–79 is caution, below 50 is suspicious.</p></div></div>
+  <div class="qa"><div class="q">The page says "Batch not found". Is the product fake?</div><div class="a"><p>First check the code: type it exactly as printed. If it still isn't found, the code was never registered, so treat any organic claim on that pack with suspicion.</p></div></div>
+  <div class="qa"><div class="q">Can I see the actual certificate?</div><div class="a"><p>Yes. Click <b>View on IPFS ↗</b> in the "Organic certificate" box.</p></div></div>
+  <div class="qa"><div class="q">What are the long codes such as 0x0131d0…667df1?</div><div class="a"><p>They are blockchain transaction IDs. Clicking one opens the public block explorer, where anyone can see that the step really was recorded, and when.</p></div></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">03</span>For farmers and certifiers</h2>
+  <div class="qa"><div class="q">Do I need a crypto wallet or cryptocurrency?</div><div class="a"><p>No. You log in with an email and a password. The platform sends the blockchain transactions for you and pays the fees.</p></div></div>
+  <div class="qa"><div class="q">What do I need to register a batch?</div><div class="a"><p>Product name, quantity and unit, origin (village or district), harvest date, and the organic certificate as a PDF, PNG, JPEG or WebP file of up to 5 MB.</p></div></div>
+  <div class="qa"><div class="q">I made a mistake in a batch. Can I edit it?</div><div class="a"><p>No. Records can't be changed; that is what makes them trustworthy. If the details are wrong, ask the certifier to reject the batch, and register a new batch with the correct details.</p></div></div>
+  <div class="qa"><div class="q">Why can't I transfer my batch?</div><div class="a"><p>A batch can only be transferred once it is certified and the certificate hasn't expired. It can only go to an approved processor. "Waiting for certifier" means the certifier hasn't reviewed it yet.</p></div></div>
+  <div class="qa"><div class="q">(Certifier) What should I check before approving?</div><div class="a"><p>Open the farmer's certificate. Check that it is genuine, that it covers this farmer and this product, and that it is still valid. Set the expiry date to the date on the certificate. You can upload your own copy to replace the farmer's file.</p></div></div>
+  <div class="qa"><div class="q">(Certifier) Can I change my decision?</div><div class="a"><p>Yes, at any time until the batch is sold. Use <b>Renew</b>, <b>Revise</b> or <b>Re-review</b> under "Reviewed batches". Rejecting a certified batch revokes it and stops any further transfers immediately. Every decision stays in the history.</p></div></div>
+  <div class="qa"><div class="q">What happens when a certificate expires?</div><div class="a"><p>The batch loses 25 trust points, shoppers see a warning, and nobody can transfer it until a certifier renews it with a new expiry date.</p></div></div>
+</section>
+
+<section>
+  <h2><span class="num">04</span>For processors, distributors and retailers</h2>
+  <div class="qa"><div class="q">How do I receive a batch?</div><div class="a"><p>You don't have to do anything. When the previous holder transfers it to you, it appears under <b>In my custody</b> on your dashboard.</p></div></div>
+  <div class="qa"><div class="q">Can I send a batch back, or skip a stage?</div><div class="a"><p>No. Batches move forward one stage at a time: farmer → processor → distributor → retailer. The website and the blockchain both block anything else.</p></div></div>
+  <div class="qa"><div class="q">I can't find the person I want to send to.</div><div class="a"><p>Only <b>approved</b> accounts in the <b>next</b> role are listed. Ask them to sign up, and ask the administrator to approve them.</p></div></div>
+  <div class="qa"><div class="q">(Retailer) How do I make QR labels?</div><div class="a"><p>On your dashboard, click <b>QR label</b>, then <b>Print label</b> or <b>Download SVG</b>. Only the retailer holding the batch, or an administrator, can print it.</p></div></div>
+  <div class="qa"><div class="q">(Retailer) When should I mark a batch as sold?</div><div class="a"><p>When the batch has been sold to consumers. Marking it sold is the final step, and it can't be undone. Shoppers can still scan the label afterwards.</p></div></div>
+</section>
+
+<section>
+  <h2><span class="num">05</span>Accounts and administration</h2>
+  <div class="qa"><div class="q">Why must an administrator approve my account?</div><div class="a"><p>So that every entry on the record comes from a known, checked person. Without this, anyone could sign up as a "certifier" and approve their own goods.</p></div></div>
+  <div class="qa"><div class="q">I forgot my password.</div><div class="a"><p>There is no "forgot password" screen yet. Contact the administrator, who can set a new one (Document 2, section 11).</p></div></div>
+  <div class="qa"><div class="q">Why was I logged out?</div><div class="a"><p>Sessions last 2 hours. You are also logged out at once if your account is blocked.</p></div></div>
+  <div class="qa"><div class="q">(Admin) What should I do with a fraud alert?</div><div class="a"><p>Open the batch and read the reason. Contact the people involved. For example, ask the certifier to renew an expired certificate, or investigate a "records do not match" alert. Alerts close by themselves when the problem is fixed. <b>Dismiss</b> only hides an alert, and it reopens if the problem remains.</p></div></div>
+  <div class="qa"><div class="q">(Admin) Can I delete a batch or an account?</div><div class="a"><p>Batches: no. Blockchain records are permanent. Accounts can be <b>blocked</b>, which stops them at once and can be undone by approving them again.</p></div></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">06</span>Blockchain, security and privacy</h2>
+  <div class="qa"><div class="q">Why use a blockchain at all?</div><div class="a"><p>A normal database can be edited by whoever runs it. A blockchain record is copied across thousands of independent computers and can't be rewritten. So even the platform owner can't secretly change a batch's history, and anyone can check it for themselves.</p></div></div>
+  <div class="qa"><div class="q">Which blockchain, and why?</div><div class="a"><p>Polygon, a widely used network that is compatible with Ethereum, where each transaction costs a fraction of a rupee. The pilot runs on <b>Amoy</b>, Polygon's test network, where fees are paid in free test tokens.</p></div></div>
+  <div class="qa"><div class="q">What if someone edits the website's database?</div><div class="a"><p>Every time a batch is looked up, the system compares the database with the blockchain. Any difference (product, owner, status, a hand-over) shows up at once as "Records do not match blockchain": the batch loses 30 points, shoppers see a warning, and the admin gets an alert. The blockchain also refuses any invalid move, such as skipping a stage, even if the database were wrong.</p></div></div>
+  <div class="qa"><div class="q">What personal data is public?</div><div class="a"><p>On the shopper page: participants' names, organisations, hand-over locations and dates. Email addresses and passwords are never shown. On the blockchain, people appear only as anonymous codes (a fingerprint of their account ID), never by name.</p></div></div>
+  <div class="qa"><div class="q">How are passwords and logins protected?</div><div class="a"><p>Passwords are stored only as secure bcrypt hashes. The login session is held in a cookie that page scripts can't read. Repeated failed logins are slowed down. Every request checks that the account is still approved.</p></div></div>
+  <div class="qa"><div class="q">Are certificate files public?</div><div class="a"><p>Yes. They are stored on IPFS, a public file network, so shoppers can see them. Don't upload documents that contain private information you wouldn't want shown.</p></div></div>
+  <div class="qa"><div class="q">Could someone copy a QR code onto a fake product?</div><div class="a"><p>A copied code still shows the <i>original</i> batch: its farmer, quantity and journey, including whether it was already sold. A shopper who sees "Sold", or a product that doesn't match, can tell something is wrong. Physical tamper-proof labels would make this stronger (see section 7).</p></div></div>
+</section>
+
+<section>
+  <h2><span class="num">07</span>Costs, limits and the future</h2>
+  <div class="qa"><div class="q">How much does it cost to run?</div><div class="a"><p>On the test network, blockchain fees are free. On Polygon mainnet, one batch's full journey uses about 1.14 million gas, roughly 0.034 POL at 30 gwei. Running costs are the server, a paid Supabase database, and optionally a paid Pinata plan.</p></div></div>
+  <div class="qa"><div class="q">Why not store everything on the blockchain?</div><div class="a"><p>It costs much more. Storing the certificate file and readable history on-chain used 2.46 million gas per batch, against 1.14 million for this design: <b>53.6% less</b>. Only IDs, short fields and the certificate's fingerprint go on-chain; the file is on IPFS and the details are in the database.</p></div></div>
+  <div class="qa"><div class="q">What are the current limitations?</div><div class="a">
+    <ul>
+      <li>It runs on a test network; moving to Polygon mainnet is a planned step.</li>
+      <li>No "forgot password" screen.</li>
+      <li>The platform wallet signs on behalf of participants, so they trust the platform to sign what they asked for. The rules are still enforced by the contract, and all records are public.</li>
+      <li>One QR per batch, not per individual pack.</li>
+      <li>English only.</li>
+    </ul></div></div>
+  <div class="qa"><div class="q">What could be added later?</div><div class="a"><p>Password reset by email, Hindi and Marathi screens, per-pack QR codes, tamper-evident labels, SMS updates for farmers, direct integration with certification bodies, IoT temperature and humidity logging during transport, and participants signing with their own wallets.</p></div></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">08</span>Troubleshooting</h2>
+  <table>
+    <thead><tr><th style="width:42%">Problem</th><th>What to do</th></tr></thead>
+    <tbody>
+      <tr><td>"Your account is awaiting admin approval"</td><td>Wait for the administrator, or contact them.</td></tr>
+      <tr><td>"Your account has been blocked"</td><td>Contact the administrator.</td></tr>
+      <tr><td>"Invalid email or password"</td><td>Check for typing mistakes and Caps Lock. After repeated failures, wait 15 minutes.</td></tr>
+      <tr><td>A green or amber notice says the transaction is pending</td><td>Wait; don't submit again. It appears by itself, usually within a minute.</td></tr>
+      <tr><td>"Blockchain network is unavailable, please try again shortly"</td><td>Try again in a few minutes. If it continues, the administrator should check the platform wallet's balance.</td></tr>
+      <tr><td>A batch shows "(confirming…)" for a long time</td><td>Tell the administrator; the background indexer may have stopped.</td></tr>
+      <tr><td>File upload fails</td><td>Use PDF, PNG, JPEG or WebP under 5 MB. "File uploads are not configured" is a server setting for the administrator.</td></tr>
+      <tr><td>The QR code opens the wrong website or "localhost"</td><td>The server's public address is set wrongly. The administrator must fix <code>NEXT_PUBLIC_SITE_URL</code> before printing more labels.</td></tr>
+      <tr><td>"Too many requests, please slow down"</td><td>Wait a minute and reload.</td></tr>
+      <tr><td>The page looks broken or old</td><td>Reload the page. If that doesn't help, clear the browser cache.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</body>
+</html>

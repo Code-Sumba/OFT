@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Organic Trace – Quality Metrics Report</title>
+<link rel="stylesheet" href="doc.css">
+<style>
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin: 2mm 0 6mm; }
+  .kpi { border: 1px solid var(--rule); border-top: 2px solid var(--ink); padding: 2.5mm 3mm; break-inside: avoid; }
+  .kpi b { display: block; font-family: "Fraunces", serif; font-size: 20pt; line-height: 1.1; }
+  .kpi span { font-family: "IBM Plex Mono", monospace; font-size: 7pt; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .bar { height: 2.2mm; background: #ebe5d8; position: relative; min-width: 30mm; }
+  .bar i { position: absolute; inset: 0 auto 0 0; background: var(--green); }
+  td.g { color: #2e5e3e; font-weight: 600; } td.a { color: #a15c07; font-weight: 600; } td.r { color: #a83a2a; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="38" height="38" fill="none" stroke="#2e5e3e"><circle cx="16" cy="16" r="14.5" stroke-width="1.5"/><circle cx="16" cy="16" r="11.5" stroke-width=".75" stroke-dasharray="1.4 1.6"/><path d="M16 23v-8" stroke-width="1.6" stroke-linecap="round"/><path d="M16 16c0-3.6 2.4-6 6-6 0 3.6-2.4 6-6 6Z" fill="#2e5e3e" stroke="none"/><path d="M16 18.5c0-2.8-1.9-4.7-4.7-4.7 0 2.8 1.9 4.7 4.7 4.7Z" fill="#b7791f" stroke="none"/></svg>
+    <div>Organic Trace<small>FARM · LEDGER · SHELF</small></div>
+  </div>
+  <div>
+    <p class="eyebrow">Document 11 of 13</p>
+    <h1>Quality Metrics Report</h1>
+    <p class="lede">Measured test results, coverage, static checks, dependency security, defects, gas benchmarks and performance, with a release-readiness verdict.</p>
+  </div>
+  <div class="meta">
+    <div><b>For</b>Project owner, client, reviewers</div>
+    <div><b>Measured</b>27 November 2026</div>
+    <div><b>Build</b>v1.0.0 (pre-release)</div>
+  </div>
+</div>
+
+<section>
+  <h2><span class="num">01</span>Summary</h2>
+  <div class="kpis">
+    <div class="kpi"><span>Automated tests</span><b>83 / 83</b>passing</div>
+    <div class="kpi"><span>Contract coverage</span><b>100%</b>lines (95.5% branches)</div>
+    <div class="kpi"><span>Backend coverage</span><b>87.4%</b>lines</div>
+    <div class="kpi"><span>Known vulnerabilities</span><b>0</b>production deps</div>
+    <div class="kpi"><span>E2E checks</span><b>44 / 44</b>local stack</div>
+    <div class="kpi"><span>Gas saving</span><b>53.6%</b>vs naive design</div>
+    <div class="kpi"><span>Open defects</span><b>0</b>High/Critical in code</div>
+    <div class="kpi"><span>Release blockers</span><b>3</b>environment only</div>
+  </div>
+  <div class="box"><b>Verdict</b><p><b>The code is ready for release. The live environment is not.</b> Every functional requirement marked Must in the PRD is implemented and tested. Three environment items must be fixed before go-live: the database is gone, the relayer has too little POL, and the production settings aren't set yet. See section 8 and Document 13.</p></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">02</span>Test results</h2>
+  <table>
+    <thead><tr><th>Suite</th><th>Framework</th><th>Tests</th><th>Passed</th><th>Duration</th></tr></thead>
+    <tbody>
+      <tr><td>Smart contract</td><td>Hardhat + Chai</td><td>25</td><td class="g">25</td><td>≈ 5 s</td></tr>
+      <tr><td>API: auth</td><td>Vitest + Supertest</td><td>16</td><td class="g">16</td><td rowspan="7">≈ 85 s in total (includes starting a Hardhat node)</td></tr>
+      <tr><td>API: batches</td><td>″</td><td>14</td><td class="g">14</td></tr>
+      <tr><td>Fraud engine</td><td>Vitest</td><td>12</td><td class="g">12</td></tr>
+      <tr><td>Indexer</td><td>″</td><td>4</td><td class="g">4</td></tr>
+      <tr><td>Public trace</td><td>″</td><td>6</td><td class="g">6</td></tr>
+      <tr><td>Uploads</td><td>″</td><td>4</td><td class="g">4</td></tr>
+      <tr><td>Config</td><td>″</td><td>2</td><td class="g">2</td></tr>
+      <tr><td><b>Total</b></td><td></td><td><b>83</b></td><td class="g"><b>83</b></td><td></td></tr>
+    </tbody>
+  </table>
+  <p>An end-to-end run through the production builds passed 44 of 44 checks (Document 10, section 4).</p>
+</section>
+
+<section>
+  <h2><span class="num">03</span>Code coverage</h2>
+  <h3>Smart contract (<code>npx hardhat coverage</code>)</h3>
+  <table>
+    <thead><tr><th>File</th><th>Statements</th><th>Branches</th><th>Functions</th><th>Lines</th></tr></thead>
+    <tbody>
+      <tr><td><code>OrganicTrace.sol</code> (deployed)</td><td class="g">100%</td><td class="g">95.45%</td><td class="g">100%</td><td class="g">100%</td></tr>
+      <tr><td><code>OrganicTraceNaive.sol</code></td><td colspan="4" class="small">0%: comparison-only contract, exercised by the gas script, not by tests, and never deployed</td></tr>
+    </tbody>
+  </table>
+  <h3>Backend (<code>vitest --coverage</code>, V8)</h3>
+  <table>
+    <thead><tr><th>Area</th><th>Lines</th><th style="width:34%"></th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td><b>All backend code</b></td><td><b>87.4%</b></td><td><div class="bar"><i style="width:87.4%"></i></div></td><td>statements 84.6%, functions 89.1%, branches 73.4%</td></tr>
+      <tr><td>routes/</td><td>95.3%</td><td><div class="bar"><i style="width:95.3%"></i></div></td><td>trace.ts and upload.ts 100%</td></tr>
+      <tr><td>services/</td><td>96.6%</td><td><div class="bar"><i style="width:96.6%"></i></div></td><td>chainTx.ts and presenter.ts 100%</td></tr>
+      <tr><td>middleware/</td><td>94.4%</td><td><div class="bar"><i style="width:94.4%"></i></div></td><td></td></tr>
+      <tr><td>repositories/</td><td>93.5%</td><td><div class="bar"><i style="width:93.5%"></i></div></td><td></td></tr>
+      <tr><td>chain/</td><td>79.6%</td><td><div class="bar"><i style="width:79.6%"></i></div></td><td>Uncovered: rare RPC error paths</td></tr>
+      <tr><td>ipfs/pinata.ts</td><td>11.1%</td><td><div class="bar"><i style="width:11.1%"></i></div></td><td>External service; tests use a fake client</td></tr>
+      <tr><td>server.ts, indexer.ts</td><td>0%</td><td><div class="bar"><i style="width:0"></i></div></td><td>Process start-up files; their logic is tested through <code>createApp</code> and <code>runIndexerOnce</code></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page">
+  <h2><span class="num">04</span>Static checks and build</h2>
+  <table>
+    <thead><tr><th>Check</th><th>Command</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Backend type check (strict)</td><td><code>tsc --noEmit</code></td><td class="g">0 errors</td></tr>
+      <tr><td>Backend production build</td><td><code>npm run build</code></td><td class="g">OK</td></tr>
+      <tr><td>Frontend type check (strict)</td><td><code>tsc --noEmit</code></td><td class="g">0 errors</td></tr>
+      <tr><td>Frontend lint</td><td><code>npm run lint</code></td><td class="g">0 errors, 0 warnings (was 29 errors, all from a stray build folder; removed)</td></tr>
+      <tr><td>Frontend production build</td><td><code>next build</code> (Next.js 16.4.6)</td><td class="g">OK, 16 routes</td></tr>
+      <tr><td>Contract compile</td><td><code>hardhat compile</code> (0.8.24, optimizer 200)</td><td class="g">OK</td></tr>
+      <tr><td>Formatter / backend linter</td><td>none configured</td><td class="a">Recommended (Document 9, section 8)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">05</span>Dependency security</h2>
+  <table>
+    <thead><tr><th>Package set</th><th>Before (27 Nov)</th><th>Action</th><th>After</th></tr></thead>
+    <tbody>
+      <tr><td>Frontend</td><td class="r">Next.js 16.4.0 flagged (build refused with SecurityFatalError)</td><td>Upgraded to 16.4.6 (patch)</td><td class="g">0</td></tr>
+      <tr><td>Backend</td><td class="r">5 (3 high, 2 moderate): body-parser, multer, zod (DoS), ip-address, qs</td><td>multer 2.5.0, zod 4.6.7, <code>npm audit fix</code></td><td class="g">0</td></tr>
+      <tr><td>Contract tooling (root)</td><td class="g">0</td><td>none</td><td class="g">0</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Measured with <code>npm audit --omit=dev</code> on production dependencies. Re-check before every release.</p>
+</section>
+
+<section>
+  <h2><span class="num">06</span>Defects</h2>
+  <table class="ids">
+    <thead><tr><th>ID</th><th>Defect</th><th>Severity</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>D-01</td><td>Every public trace look-up shared one rate-limit bucket (server-side fetch hid the visitor's address): over 60 scans a minute, all shoppers would see an error</td><td class="r">High</td><td class="g">Fixed + test TR-05</td></tr>
+      <tr><td>D-02</td><td>The login limit could lock out a whole office sharing one address</td><td class="a">Medium</td><td class="g">Fixed (only failures count)</td></tr>
+      <tr><td>D-03</td><td>Batches with an expired certificate could still be transferred</td><td class="a">Medium</td><td class="g">Fixed + test BA-06</td></tr>
+      <tr><td>D-04</td><td>Harvest date shown one day early on servers set to a time zone ahead of UTC (for example IST)</td><td class="a">Medium</td><td class="g">Fixed (DATE kept as text)</td></tr>
+      <tr><td>D-05</td><td>The API would start in production with a localhost site URL, printing unusable QR codes</td><td class="a">Medium</td><td class="g">Fixed + test CF-02</td></tr>
+      <tr><td>D-06</td><td>Logout cleared the cookie without the same options it was set with</td><td>Low</td><td class="g">Fixed</td></tr>
+      <tr><td>D-07</td><td>The migrate script couldn't find the schema when compiled (Docker)</td><td>Low</td><td class="g">Fixed</td></tr>
+      <tr><td>D-08</td><td>Phone layout: header wrapping, batch codes breaking across lines, hero overflow</td><td>Low</td><td class="g">Fixed</td></tr>
+      <tr><td>D-09</td><td>A network failure exactly during registration can leave an on-chain batch with no database row</td><td>Low</td><td class="a">Open (rare; documented)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page">
+  <h2><span class="num">07</span>Benchmarks</h2>
+  <h3>Gas (5-batch lifecycle, from <code>scripts/gas-report.ts</code>)</h3>
+  <table>
+    <thead><tr><th>Operation</th><th>Naive (all on-chain)</th><th>Hybrid (deployed)</th><th>Saving</th></tr></thead>
+    <tbody>
+      <tr><td>registerBatch</td><td>1,228,251</td><td>304,566</td><td class="g">75.2%</td></tr>
+      <tr><td>certifyBatch</td><td>234,148</td><td>66,345</td><td class="g">71.7%</td></tr>
+      <tr><td>transferBatch (each)</td><td>259,001</td><td>196,120</td><td class="g">24.3%</td></tr>
+      <tr><td>markSold</td><td>216,556</td><td>180,179</td><td class="g">16.8%</td></tr>
+      <tr><td><b>Full lifecycle</b></td><td><b>2,455,958</b></td><td><b>1,139,450</b></td><td class="g"><b>53.6%</b></td></tr>
+      <tr><td>Cost at 30 gwei</td><td>0.0737 POL</td><td>0.0342 POL</td><td></td></tr>
+      <tr><td>Deployment (once)</td><td>884,029</td><td>1,949,198</td><td class="a">hybrid costs more (validation, roles, errors)</td></tr>
+    </tbody>
+  </table>
+  <h3>Response time (local stack, 20 requests each)</h3>
+  <table>
+    <thead><tr><th>Request</th><th>Median</th><th>p95</th><th>Max</th></tr></thead>
+    <tbody>
+      <tr><td><code>GET /api/trace/:code</code> (includes the chain comparison)</td><td>5 ms</td><td>23 ms</td><td>189 ms</td></tr>
+      <tr><td>Trace web page (server-rendered)</td><td>43 ms</td><td>56 ms</td><td>142 ms</td></tr>
+      <tr><td><code>GET /api/health</code></td><td>1 ms</td><td>2 ms</td><td>2 ms</td></tr>
+    </tbody>
+  </table>
+  <p class="small">The local chain answers instantly. On Amoy, the first comparison per batch takes as long as the RPC does (capped at 2.5 s, then cached for 30 s). The PRD target of under 3 s on a phone must be confirmed on the live site (Document 10, NF-01).</p>
+</section>
+
+<section>
+  <h2><span class="num">08</span>Requirements and release readiness</h2>
+  <table>
+    <thead><tr><th>Area</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>PRD functional requirements FR-01 to FR-13</td><td class="g">Implemented and tested</td></tr>
+      <tr><td>FR-14 Search batches "in each dashboard" (Could)</td><td class="a">Partial: API search on every list; search box in the admin panel only</td></tr>
+      <tr><td>FR-15 Export journey as PDF (Could)</td><td class="a">Not implemented</td></tr>
+      <tr><td>Processor "add processing note" (PRD roles table)</td><td class="a">Not implemented</td></tr>
+      <tr><td>Non-functional: security, integrity, reliability, usability</td><td class="g">Met (see Document 6)</td></tr>
+      <tr><td>Database (Supabase project)</td><td class="r">Blocker: project no longer exists</td></tr>
+      <tr><td>Relayer wallet funds</td><td class="r">Blocker: 0.0046 POL (needs ≥ 0.5)</td></tr>
+      <tr><td>Production settings (<code>NODE_ENV</code>, domain, <code>DEPLOY_BLOCK</code>)</td><td class="r">Blocker: not yet set</td></tr>
+      <tr><td>Live acceptance test and QR scan on real phones</td><td class="a">Pending, after the blockers</td></tr>
+    </tbody>
+  </table>
+</section>
+
+</body>
+</html>

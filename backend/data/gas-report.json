@@ -1,0 +1,39 @@
+{
+  "generatedAt": "2026-10-10T07:14:12.313Z",
+  "batches": 5,
+  "gasPriceGwei": 30,
+  "note": "Variant A stores the certificate text (~1.5 KB) and readable history on-chain; Variant B stores ids, short fields and an IPFS CID.",
+  "deploy": {
+    "naive": 884029,
+    "hybrid": 1949198
+  },
+  "perCall": [
+    {
+      "fn": "registerBatch",
+      "naive": 1228251,
+      "hybrid": 304566
+    },
+    {
+      "fn": "certifyBatch",
+      "naive": 234148,
+      "hybrid": 66345
+    },
+    {
+      "fn": "transferBatch",
+      "naive": 259001,
+      "hybrid": 196120
+    },
+    {
+      "fn": "markSold",
+      "naive": 216556,
+      "hybrid": 180179
+    }
+  ],
+  "lifecycle": {
+    "naive": 2455958,
+    "hybrid": 1139450,
+    "savingPct": 53.6,
+    "naivePol": 0.07367874,
+    "hybridPol": 0.0341835
+  }
+}

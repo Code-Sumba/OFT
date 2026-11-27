@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Organic Trace – API Documentation</title>
+<link rel="stylesheet" href="doc.css">
+<style>
+  .ep { border: 1px solid var(--rule); margin: 0 0 5mm; break-inside: avoid; }
+  .ep header { display: flex; gap: 3mm; align-items: baseline; background: #f3eee3; padding: 2mm 3mm; border-bottom: 1px solid var(--rule); }
+  .ep .verb { font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 8.5pt; color: white; background: var(--green); padding: 0.4mm 2mm; }
+  .ep .verb.post { background: #1f2a22; } .ep .verb.patch { background: var(--accent); }
+  .ep .path { font-family: "IBM Plex Mono", monospace; font-weight: 600; }
+  .ep .who { margin-left: auto; font-size: 8.5pt; color: var(--muted); }
+  .ep .body { padding: 2.5mm 3mm 1mm; }
+  .ep pre { margin: 1mm 0 3mm; }
+  .ep table { margin-bottom: 3mm; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="brand">
+    <svg viewBox="0 0 32 32" width="38" height="38" fill="none" stroke="#2e5e3e"><circle cx="16" cy="16" r="14.5" stroke-width="1.5"/><circle cx="16" cy="16" r="11.5" stroke-width=".75" stroke-dasharray="1.4 1.6"/><path d="M16 23v-8" stroke-width="1.6" stroke-linecap="round"/><path d="M16 16c0-3.6 2.4-6 6-6 0 3.6-2.4 6-6 6Z" fill="#2e5e3e" stroke="none"/><path d="M16 18.5c0-2.8-1.9-4.7-4.7-4.7 0 2.8 1.9 4.7 4.7 4.7Z" fill="#b7791f" stroke="none"/></svg>
+    <div>Organic Trace<small>FARM · LEDGER · SHELF</small></div>
+  </div>
+  <div>
+    <p class="eyebrow">Document 7 of 13</p>
+    <h1>API Documentation</h1>
+    <p class="lede">Every REST endpoint of the Organic Trace API: authentication, request and response formats, errors and limits. A matching OpenAPI 3.1 file (<code>organic-trace-openapi.json</code>) can be imported into Postman or Swagger UI.</p>
+  </div>
+  <div class="meta">
+    <div><b>For</b>Developers and integrators</div>
+    <div><b>Version</b>API 1.0 · 27 November 2026</div>
+    <div><b>Base URL</b>https://your-domain/api</div>
+  </div>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><span>01</span>Conventions</li>
+    <li><span>02</span>Authentication</li>
+    <li><span>03</span>Errors and status codes</li>
+    <li><span>04</span>Data objects</li>
+    <li><span>05</span>Auth endpoints</li>
+    <li><span>06</span>Users and uploads</li>
+    <li><span>07</span>Batches</li>
+    <li><span>08</span>Public trace</li>
+    <li><span>09</span>Admin</li>
+    <li><span>10</span>Rate limits</li>
+    <li><span>11</span>Endpoint summary</li>
+  </ol>
+</div>
+
+<section>
+  <h2><span class="num">01</span>Conventions</h2>
+  <ul>
+    <li>All paths start with <code>/api</code>. Browsers call the website's own origin (<code>https://your-domain/api/…</code>), which forwards the request to the API.</li>
+    <li>Request and response bodies are JSON (<code>Content-Type: application/json</code>), except file upload (multipart) and QR images.</li>
+    <li>Every JSON response uses one envelope:</li>
+  </ul>
+<pre>{ "success": true,  "data": { … } }
+{ "success": false, "error": "Human-readable message", "details": [ { "field": "email", "message": "Invalid email" } ] }</pre>
+  <ul>
+    <li>Dates: request dates are <code>YYYY-MM-DD</code>; response timestamps are ISO 8601 in UTC. <code>harvestDate</code> is returned as <code>YYYY-MM-DD</code>.</li>
+    <li>Batch codes look like <code>OT-2026-7KQ3MZ</code>. The public trace endpoint accepts lower case.</li>
+    <li>Blockchain writes return a <code>tx</code> object: <code>{ hash, url, confirmed }</code>. With <b>200/201</b>, the transaction is confirmed and its events are already applied. With <b>202</b>, it was sent but not yet confirmed; the indexer records it later.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">02</span>Authentication</h2>
+  <p><code>POST /api/auth/login</code> returns a JWT (HS256, 2-hour default expiry) in the body and sets it as the cookie <code>ot_token</code> (HTTP-only, SameSite=Lax, Secure in production). Send it either way:</p>
+<pre>Cookie: ot_token=&lt;jwt&gt;               <span class="c"># browsers (automatic)</span>
+Authorization: Bearer &lt;jwt&gt;          <span class="c"># scripts, Postman</span></pre>
+  <p>On every protected request the API verifies the token <b>and reloads the user</b>. Pending or blocked accounts get <b>403</b> straight away, even with a valid token.</p>
+  <table>
+    <thead><tr><th>Access label used below</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>Public</td><td>No token</td></tr>
+      <tr><td>Any user</td><td>Any approved, logged-in account</td></tr>
+      <tr><td>Role names</td><td>Only those roles; others get 403</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="page">
+  <h2><span class="num">03</span>Errors and status codes</h2>
+  <table>
+    <thead><tr><th>Status</th><th>When</th></tr></thead>
+    <tbody>
+      <tr><td>200 / 201</td><td>Success (201 after creating something)</td></tr>
+      <tr><td>202</td><td>Blockchain transaction sent, not yet confirmed (<code>data.message</code> explains)</td></tr>
+      <tr><td>400</td><td>Validation failed (<code>details</code> lists the fields), malformed JSON, or a business rule on the input (for example a future harvest date)</td></tr>
+      <tr><td>401</td><td>Missing, invalid or expired token; wrong email or password</td></tr>
+      <tr><td>403</td><td>Wrong role, not the current holder, account pending or blocked</td></tr>
+      <tr><td>404</td><td>Batch, user, alert or route not found</td></tr>
+      <tr><td>409</td><td>Conflict with current state (not certified, expired, already sold, duplicate email, contract revert)</td></tr>
+      <tr><td>413</td><td>Upload larger than 5 MB</td></tr>
+      <tr><td>429</td><td>Rate limit exceeded</td></tr>
+      <tr><td>500</td><td>Unexpected error (logged on the server)</td></tr>
+      <tr><td>502 / 503</td><td>Blockchain or IPFS unavailable / uploads not configured</td></tr>
+    </tbody>
+  </table>
+  <h3>Contract reverts</h3>
+  <p>When the smart contract rejects a call, the response includes <code>details.contractError</code>:</p>
+  <table>
+    <thead><tr><th>contractError</th><th>Status</th><th>Message</th></tr></thead>
+    <tbody>
+      <tr><td><code>BatchAlreadyExists</code></td><td>409</td><td>This batch is already registered on the blockchain</td></tr>
+      <tr><td><code>BatchNotFound</code></td><td>404</td><td>Batch not found on the blockchain</td></tr>
+      <tr><td><code>BatchNotCertified</code></td><td>409</td><td>Batch must be certified before it can be transferred</td></tr>
+      <tr><td><code>BatchAlreadySold</code></td><td>409</td><td>Batch has already been sold</td></tr>
+      <tr><td><code>InvalidStageTransition</code></td><td>409</td><td>Batches can only move one stage forward</td></tr>
+      <tr><td><code>NotAtRetailer</code></td><td>409</td><td>Only a batch at the retailer can be marked as sold</td></tr>
+      <tr><td><code>ExpiryNotInFuture</code></td><td>400</td><td>Certificate expiry must be in the future</td></tr>
+      <tr><td><code>EmptyField</code> / <code>StringTooLong</code> / <code>ZeroActor</code></td><td>400</td><td>A required field is empty / too long / invalid participant</td></tr>
+      <tr><td><code>Unauthorized</code></td><td>500</td><td>The relayer wallet is not authorised on the contract</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2><span class="num">04</span>Data objects</h2>
+  <h4>User (own account and admin lists)</h4>
+<pre>{ "id": "uuid", "name": "Ramesh Patil", "email": "farmer@demo.local", "role": "farmer",
+  "status": "approved", "organisation": "Patil Organic Farm, Nashik",
+  "chain_actor_id": "0x…(keccak256 of id)", "created_at": "2026-11-27T08:55:00.000Z" }</pre>
+  <h4>Party (public profile, no email)</h4>
+<pre>{ "id": "uuid", "name": "Fresh Pack Processing", "organisation": "Fresh Pack Pvt Ltd", "role": "processor" }</pre>
+  <h4>Batch</h4>
+<pre>{ "code": "OT-2026-4QNEHY", "product": "Basmati Rice", "quantity": 250, "unit": "kg",
+  "origin": "Dehradun, Uttarakhand", "harvestDate": "2026-11-01",
+  "status": "certified",            <span class="c">// registered | certified | rejected</span>
+  "stage": "sold",                  <span class="c">// farmer | processor | distributor | retailer | sold</span>
+  "farmer": Party, "currentOwner": Party,
+  "certificate": { "cid": "bafkrei…", "url": "https://gateway…/ipfs/bafkrei…", "expiry": "2027-12-31T23:59:59.000Z", "expired": false },
+  "trustScore": 100,
+  "registerTx": { "hash": "0x…", "url": "https://amoy.polygonscan.com/tx/0x…" },
+  "onChain": true, "createdAt": "…" }</pre>
+  <h4>Event (journey step)</h4>
+<pre>{ "type": "transferred",          <span class="c">// registered | certified | rejected | transferred | sold</span>
+  "stage": "processor", "location": "Haridwar", "time": "…",
+  "from": Party|null, "to": Party|null, "tx": { "hash": "0x…", "url": "…", "block": 49800001 } }</pre>
+  <h4>Certificate (certification history entry)</h4>
+<pre>{ "approved": true, "cid": "bafkrei…", "url": "…", "expiry": "…", "certifier": Party, "tx": { "hash": "…", "url": "…" }, "at": "…" }</pre>
+</section>
+
+<section class="page">
+  <h2><span class="num">05</span>Auth endpoints</h2>
+
+  <div class="ep"><header><span class="verb post">POST</span><span class="path">/api/auth/register</span><span class="who">Public · rate-limited</span></header><div class="body">
+  <p>Creates an account with status <code>pending</code>. Admin accounts can't be self-registered.</p>
+  <table><thead><tr><th>Field</th><th>Rules</th></tr></thead><tbody>
+    <tr><td><code>name</code></td><td>string, 2–100</td></tr>
+    <tr><td><code>email</code></td><td>valid email, ≤254, stored in lower case, unique</td></tr>
+    <tr><td><code>password</code></td><td>8–72 characters</td></tr>
+    <tr><td><code>role</code></td><td><code>farmer | certifier | processor | distributor | retailer</code></td></tr>
+    <tr><td><code>organisation</code></td><td>optional, ≤150</td></tr>
+  </tbody></table>
+  <p><b>201</b> <code>{ user, message }</code> · <b>409</b> email exists · <b>400</b> validation</p></div></div>
+
+  <div class="ep"><header><span class="verb post">POST</span><span class="path">/api/auth/login</span><span class="who">Public · failed attempts rate-limited</span></header><div class="body">
+<pre>{ "email": "farmer@demo.local", "password": "…" }</pre>
+  <p><b>200</b> <code>{ token, user }</code> and sets the <code>ot_token</code> cookie · <b>401</b> "Invalid email or password" (the same for unknown emails) · <b>403</b> pending or blocked</p></div></div>
+
+  <div class="ep"><header><span class="verb post">POST</span><span class="path">/api/auth/logout</span><span class="who">Public</span></header><div class="body"><p>Clears the cookie. <b>200</b> <code>{ loggedOut: true }</code></p></div></div>
+
+  <div class="ep"><header><span class="verb">GET</span><span class="path">/api/auth/me</span><span class="who">Any user</span></header><div class="body"><p><b>200</b> <code>{ user }</code></p></div></div>
+
+  <div class="ep"><header><span class="verb">GET</span><span class="path">/api/health</span><span class="who">Public</span></header><div class="body"><p><b>200</b> <code>{ status: "ok" }</code>. Used by the Docker health check.</p></div></div>
+</section>
+
+<section>
+  <h2><span class="num">06</span>Users and uploads</h2>
+  <div class="ep"><header><span class="verb">GET</span><span class="path">/api/users?role=processor</span><span class="who">Any user</span></header><div class="body">
+  <p>Approved participants of one role, sorted by name, used to pick a transfer recipient. <code>role</code> (required): farmer, certifier, processor, distributor or retailer. <b>200</b> <code>{ users: Party[] }</code> (no emails).</p></div></div>
+
+  <div class="ep"><header><span class="verb post">POST</span><span class="path">/api/upload</span><span class="who">Farmer, Certifier · 30 per 15 min</span></header><div class="body">
+  <p>multipart/form-data with one field <code>file</code>. PDF, PNG, JPEG or WebP detected from the content, ≤ 5 MB. The file is pinned publicly on IPFS.</p>
+<pre>{ "cid": "bafkrei…", "url": "https://gateway.pinata.cloud/ipfs/bafkrei…", "mimeType": "application/pdf", "size": 48213 }</pre>
+  <p><b>201</b> · <b>400</b> missing or disallowed type · <b>413</b> too large · <b>502</b> Pinata failed · <b>503</b> uploads not configured</p></div></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">07</span>Batches</h2>
+  <p>All batch endpoints need a token.</p>
+
+  <div class="ep"><header><span class="verb post">POST</span><span class="path">/api/batches</span><span class="who">Farmer</span></header><div class="body">
+<pre>{ "product": "Basmati Rice", "quantity": 250, "unit": "kg", "origin": "Dehradun, Uttarakhand",
+  "harvestDate": "2026-11-01", "certificateCid": "bafkrei…" }</pre>
+  <table><tbody>
+    <tr><td><code>product</code>, <code>origin</code></td><td>string, 2–100</td></tr>
+    <tr><td><code>quantity</code></td><td>number &gt; 0, ≤ 1,000,000</td></tr>
+    <tr><td><code>unit</code></td><td><code>kg | quintal | tonne | litre | dozen | piece</code></td></tr>
+    <tr><td><code>harvestDate</code></td><td><code>YYYY-MM-DD</code>, not in the future</td></tr>
+    <tr><td><code>certificateCid</code></td><td>optional, 46–100 alphanumeric characters (from <code>/api/upload</code>)</td></tr>
+  </tbody></table>
+  <p>Registers the batch in the database and on-chain. <b>201</b> <code>{ batch, tx }</code> · <b>202</b> <code>{ batch, tx, message }</code> · <b>400</b> · <b>403</b> · <b>502</b></p></div></div>
+
+  <div class="ep"><header><span class="verb">GET</span><span class="path">/api/batches?q=&amp;status=&amp;stage=</span><span class="who">Any user</span></header><div class="body">
+  <p>Admins and certifiers see all batches; farmers see their own; others see batches they hold or held. Filters: <code>q</code> (code or product, ≤50), <code>status</code>, <code>stage</code>. <b>200</b> <code>{ batches: Batch[] }</code></p></div></div>
+
+  <div class="ep"><header><span class="verb">GET</span><span class="path">/api/batches/:code</span><span class="who">Any user</span></header><div class="body">
+  <p><b>200</b> <code>{ batch, events: Event[], certificates: Certificate[], nextStage, canTransfer }</code> · <b>404</b></p></div></div>
+
+  <div class="ep"><header><span class="verb post">POST</span><span class="path">/api/batches/:code/certify</span><span class="who">Certifier</span></header><div class="body">
+<pre>{ "approved": true, "expiry": "2027-12-31", "certificateCid": "bafkrei…(optional, replaces)" }
+{ "approved": false }</pre>
+  <p>Approval needs a future expiry (stored as 23:59:59 UTC on that day) and a certificate (the farmer's, or the one sent). It can be repeated until the batch is sold (renew or revoke). <b>200/202</b> · <b>400</b> · <b>409</b> still pending on-chain or already sold</p></div></div>
+
+  <div class="ep"><header><span class="verb post">POST</span><span class="path">/api/batches/:code/transfer</span><span class="who">Current holder</span></header><div class="body">
+<pre>{ "toUserId": "uuid of an approved user in the next role", "location": "Haridwar" }</pre>
+  <p>Checks, in order: current holder and matching role (403) · registration confirmed, certified, certificate not expired, not at the retailer (409) · recipient approved and in the next role (400). <b>200/202</b> <code>{ batch, tx }</code></p></div></div>
+
+  <div class="ep"><header><span class="verb post">POST</span><span class="path">/api/batches/:code/sold</span><span class="who">Holding retailer</span></header><div class="body">
+<pre>{ "location": "FC Road, Pune" }</pre>
+  <p><b>200/202</b> · <b>403</b> not the holder · <b>409</b> not at retailer stage</p></div></div>
+
+  <div class="ep"><header><span class="verb">GET</span><span class="path">/api/batches/:code/qr[?format=svg]</span><span class="who">Holding retailer, Admin</span></header><div class="body">
+  <p>A 512 px PNG (or an SVG) QR code, error correction M, encoding <code>{NEXT_PUBLIC_SITE_URL}/trace/{code}</code>.</p></div></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">08</span>Public trace</h2>
+  <div class="ep"><header><span class="verb">GET</span><span class="path">/api/trace/:code</span><span class="who">Public · 120/min per visitor</span></header><div class="body">
+  <p>Recomputes the trust score (including the comparison with the chain), then returns everything the QR page needs. No emails are returned.</p>
+<pre>{ "batch": Batch,
+  "timeline": Event[],
+  "certificates": Certificate[],
+  "trust": { "score": 100, "band": "verified",
+             "rules": [ { "rule": "R3", "label": "Certificate expired", "severity": "high", "impact": 25, "details": "…" } ] },
+  "verification": { "badge": "verified",         <span class="c">// or "warning"</span>
+                    "chainChecked": true, "matchesChain": true, "differences": [],
+                    "contract": { "address": "0x270C…", "url": "https://amoy.polygonscan.com/address/0x270C…" } } }</pre>
+  <p><code>badge</code> is <code>verified</code> only when the band is verified, the status is certified, the certificate hasn't expired, and the record matches the chain. <b>404</b> for unknown or malformed codes.</p></div></div>
+</section>
+
+<section>
+  <h2><span class="num">09</span>Admin</h2>
+  <p>All admin endpoints require the <b>admin</b> role.</p>
+  <div class="ep"><header><span class="verb">GET</span><span class="path">/api/admin/users?status=&amp;role=</span><span class="who">Admin</span></header><div class="body"><p><b>200</b> <code>{ users: User[] }</code>, newest first.</p></div></div>
+  <div class="ep"><header><span class="verb patch">PATCH</span><span class="path">/api/admin/users/:id</span><span class="who">Admin</span></header><div class="body">
+<pre>{ "status": "approved" }    <span class="c">// or "blocked"</span></pre>
+  <p>Takes effect immediately. <b>400</b> when changing your own account · <b>404</b></p></div></div>
+  <div class="ep"><header><span class="verb">GET</span><span class="path">/api/admin/fraud-alerts?resolved=&amp;severity=</span><span class="who">Admin</span></header><div class="body">
+  <p>Up to 200 alerts, newest first: <code>{ id, batch_code, rule, severity, details, resolved, created_at, product, trust_score }</code>.</p></div></div>
+  <div class="ep"><header><span class="verb patch">PATCH</span><span class="path">/api/admin/fraud-alerts/:id</span><span class="who">Admin</span></header><div class="body"><p>Dismisses the alert (<code>resolved = true</code>). It reopens if the rule still triggers. <b>200</b> <code>{ alert }</code></p></div></div>
+  <div class="ep"><header><span class="verb">GET</span><span class="path">/api/admin/analytics</span><span class="who">Admin</span></header><div class="body">
+<pre>{ "users": { "byRole": {…}, "byStatus": {…} },
+  "batches": { "total": 5, "byStatus": {…}, "byStage": {…}, "averageTrustScore": 80 },
+  "openAlerts": { "high": 2 },
+  "daily": [ { "date": "2026-11-27", "registered": 4, "certified": 4, "transferred": 7, "sold": 1 }, … 14 days ] }</pre></div></div>
+  <div class="ep"><header><span class="verb">GET</span><span class="path">/api/admin/gas-report</span><span class="who">Admin</span></header><div class="body"><p>Contents of <code>backend/data/gas-report.json</code>: deploy cost, per-function gas, lifecycle totals and the saving. <b>404</b> if not generated yet.</p></div></div>
+</section>
+
+<section class="page">
+  <h2><span class="num">10</span>Rate limits</h2>
+  <table>
+    <thead><tr><th>Endpoint</th><th>Limit per visitor address</th><th>Setting</th></tr></thead>
+    <tbody>
+      <tr><td><code>POST /auth/login</code></td><td>20 failed attempts / 15 min</td><td><code>LOGIN_RATE_LIMIT</code></td></tr>
+      <tr><td><code>POST /auth/register</code></td><td>10 / hour</td><td><code>REGISTER_RATE_LIMIT</code></td></tr>
+      <tr><td><code>GET /trace/:code</code></td><td>120 / minute</td><td><code>TRACE_RATE_LIMIT_PER_MIN</code></td></tr>
+      <tr><td><code>POST /upload</code></td><td>30 / 15 min</td><td>fixed</td></tr>
+    </tbody>
+  </table>
+  <p>Responses include standard <code>RateLimit</code> headers (draft 7). When the limit is exceeded the API returns <b>429</b>.</p>
+</section>
+
+<section>
+  <h2><span class="num">11</span>Endpoint summary</h2>
+  <table>
+    <thead><tr><th>Method</th><th>Path</th><th>Access</th></tr></thead>
+    <tbody>
+      <tr><td>GET</td><td><code>/api/health</code></td><td>Public</td></tr>
+      <tr><td>POST</td><td><code>/api/auth/register</code></td><td>Public</td></tr>
+      <tr><td>POST</td><td><code>/api/auth/login</code></td><td>Public</td></tr>
+      <tr><td>POST</td><td><code>/api/auth/logout</code></td><td>Public</td></tr>
+      <tr><td>GET</td><td><code>/api/auth/me</code></td><td>Any user</td></tr>
+      <tr><td>GET</td><td><code>/api/users?role=</code></td><td>Any user</td></tr>
+      <tr><td>POST</td><td><code>/api/upload</code></td><td>Farmer, Certifier</td></tr>
+      <tr><td>POST</td><td><code>/api/batches</code></td><td>Farmer</td></tr>
+      <tr><td>GET</td><td><code>/api/batches</code></td><td>Any user</td></tr>
+      <tr><td>GET</td><td><code>/api/batches/:code</code></td><td>Any user</td></tr>
+      <tr><td>POST</td><td><code>/api/batches/:code/certify</code></td><td>Certifier</td></tr>
+      <tr><td>POST</td><td><code>/api/batches/:code/transfer</code></td><td>Current holder</td></tr>
+      <tr><td>POST</td><td><code>/api/batches/:code/sold</code></td><td>Holding retailer</td></tr>
+      <tr><td>GET</td><td><code>/api/batches/:code/qr</code></td><td>Holding retailer, Admin</td></tr>
+      <tr><td>GET</td><td><code>/api/trace/:code</code></td><td>Public</td></tr>
+      <tr><td>GET</td><td><code>/api/admin/users</code></td><td>Admin</td></tr>
+      <tr><td>PATCH</td><td><code>/api/admin/users/:id</code></td><td>Admin</td></tr>
+      <tr><td>GET</td><td><code>/api/admin/fraud-alerts</code></td><td>Admin</td></tr>
+      <tr><td>PATCH</td><td><code>/api/admin/fraud-alerts/:id</code></td><td>Admin</td></tr>
+      <tr><td>GET</td><td><code>/api/admin/analytics</code></td><td>Admin</td></tr>
+      <tr><td>GET</td><td><code>/api/admin/gas-report</code></td><td>Admin</td></tr>
+    </tbody>
+  </table>
+  <h3>Quick test with curl</h3>
+<pre>curl -s -c jar -H "Content-Type: application/json" \
+  -d '{"email":"farmer@demo.local","password":"…"}' https://your-domain/api/auth/login
+curl -s -b jar https://your-domain/api/batches
+curl -s https://your-domain/api/trace/OT-2026-4QNEHY</pre>
+</section>
+
+</body>
+</html>

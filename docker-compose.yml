@@ -1,0 +1,47 @@
+# Production stack: website, API and indexer. Works with Coolify (Docker Compose) or plain Docker.
+#   cp .env.example backend/.env   # fill in, NODE_ENV=production, real NEXT_PUBLIC_SITE_URL
+#   docker compose up -d --build
+#   docker compose run --rm api node dist/scripts/migrate.js
+#   docker compose run --rm api node dist/scripts/seed.js
+# Only "web" is published. Put HTTPS (Coolify/Traefik, nginx, Caddy) in front of port 3000.
+# The API stays on the internal network: TRUST_PROXY=1 relies on that.
+services:
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        API_URL: http://api:4000
+    environment:
+      API_URL: http://api:4000
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: organic-trace-api
+    env_file: backend/.env
+    environment:
+      NODE_ENV: production
+    expose:
+      - "4000"
+    restart: unless-stopped
+
+  indexer:
+    image: organic-trace-api
+    command: ["node", "dist/src/indexer.js"]
+    env_file: backend/.env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    restart: unless-stopped
